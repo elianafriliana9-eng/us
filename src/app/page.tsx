@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRoomStore } from "@/stores/roomStore";
 import { createRoom, joinRoomByCode } from "@/lib/services/roomService";
-import { Heart, Sparkles, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 function RoomOnboardingContent() {
@@ -89,11 +89,13 @@ function RoomOnboardingContent() {
     <div className="flex min-h-dvh flex-col justify-between p-6 bg-[#fff8f5] text-[#1e1b19]">
       <div className="flex flex-col items-center text-center pt-8">
         {/* Logo Badge */}
-        <div className="relative mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-linear-to-tr from-[#b80035] to-[#e11d48] text-white shadow-xl shadow-rose-900/15">
-          <Heart className="w-9 h-9 fill-white text-white" />
-          <div className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#ffddb8] text-[#855300] shadow-xs">
-            <Sparkles className="w-3.5 h-3.5" />
-          </div>
+        <div className="relative mb-4 flex h-24 w-24 items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="Us Logo"
+            className="w-full h-full object-contain drop-shadow-md"
+          />
         </div>
 
         <h1 className="text-3xl font-extrabold tracking-tight text-[#b80035]">

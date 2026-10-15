@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useRoomStore } from "@/stores/roomStore";
-import { Heart, Copy, Check } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { calculateRelationshipStats } from "@/lib/utils";
 
@@ -64,8 +64,13 @@ export function TopHeader() {
     <header className="fixed top-0 inset-x-0 z-50 bg-[#fff8f5]/90 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
       <div className="h-16 max-w-md mx-auto px-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ffdada] text-[#b80035]">
-            <Heart className="w-4 h-4 fill-[#b80035] text-[#b80035]" />
+          <div className="flex items-center justify-center w-8 h-8 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="Us Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="flex flex-col">
             <span className="text-[18px] font-bold text-[#b80035] tracking-tight leading-none">

@@ -3,7 +3,7 @@
 import { useRoomStore } from "@/stores/roomStore";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Home, Users, Check, Copy, Lock, Heart, LogOut } from "lucide-react";
+import { Home, Users, Check, Copy, Lock, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 export default function MorePage() {
@@ -126,7 +126,8 @@ export default function MorePage() {
         </div>
         <div className="flex items-center justify-between py-1 text-[#5c3f40]">
           <span className="flex items-center gap-1.5">
-            <Heart className="w-4 h-4 text-[#b80035]" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Us" className="w-4 h-4 object-contain" />
             Versi Aplikasi
           </span>
           <span className="text-[#1e1b19] font-semibold">Us v0.1.0</span>

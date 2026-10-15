@@ -13,6 +13,10 @@ export const metadata: Metadata = {
   title: "Us — Our Story & Couple Space",
   description: "Private digital couple app for memories, wishlist, expenses, and milestones.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

@@ -20,6 +20,8 @@ import {
 import { toast } from "sonner";
 import { calculateRelationshipStats } from "@/lib/utils";
 import { EditDateModal } from "@/components/story/edit-date-modal";
+import { VoiceNoteModal } from "@/components/story/voice-note-modal";
+import { AudioPlayer } from "@/components/story/audio-player";
 
 export default function StoryPage() {
   const { room, currentUser } = useRoomStore();
@@ -30,6 +32,7 @@ export default function StoryPage() {
   const [filter, setFilter] = useState<"all" | PostCategory>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [heartCount, setHeartCount] = useState(0);
 
   const spawnAreaRef = useRef<HTMLDivElement>(null);
@@ -199,8 +202,8 @@ export default function StoryPage() {
               </span>
             </button>
             <button
-              onClick={() => toast.info("Fitur Voice Note akan segera hadir! 🎙️")}
-              className="h-11 w-11 rounded-full bg-[#faf2ee] text-[#5c3f40] flex items-center justify-center active:scale-90 transition-transform shadow-xs"
+              onClick={() => setIsVoiceModalOpen(true)}
+              className="h-11 w-11 rounded-full bg-[#faf2ee] hover:bg-[#ffdada] text-[#5c3f40] hover:text-[#b80035] flex items-center justify-center active:scale-90 transition-all shadow-xs cursor-pointer"
               title="Kirim pesan suara"
             >
               <Mic className="w-4 h-4" />
@@ -217,6 +220,7 @@ export default function StoryPage() {
         {[
           { id: "all", label: "Semua Cerita" },
           { id: "photo", label: "Foto 📸" },
+          { id: "voice", label: "Suara 🎙️" },
           { id: "trip", label: "Liburan ✈️" },
           { id: "milestone", label: "Momen Penting 💍" },
           { id: "daily", label: "Hal Kecil ☕" },
@@ -292,6 +296,7 @@ export default function StoryPage() {
                       {post.category === "trip" && "✈️ Liburan"}
                       {post.category === "milestone" && "💍 Momen Spesial"}
                       {post.category === "daily" && "☕ Hal Kecil"}
+                      {post.category === "voice" && "🎙️ Pesan Suara"}
                     </span>
                     <span className="text-xs text-[#5c3f40]">{post.date}</span>
                   </div>
@@ -300,6 +305,13 @@ export default function StoryPage() {
                 <h3 className="text-base font-bold text-[#1e1b19] leading-snug">
                   {post.title}
                 </h3>
+
+                {/* Audio Voice Note module */}
+                {post.audioUrl && (
+                  <div className="pt-1">
+                    <AudioPlayer src={post.audioUrl} duration={post.audioDuration} />
+                  </div>
+                )}
 
                 {/* Photo module */}
                 {post.images && post.images.length > 0 && (
@@ -383,6 +395,12 @@ export default function StoryPage() {
           currentStartDate={room.relationshipStartDate}
         />
       )}
+
+      {/* Voice Note Modal */}
+      <VoiceNoteModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+      />
     </div>
   );
 }

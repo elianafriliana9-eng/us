@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRoomStore } from "@/stores/roomStore";
 import { createExpense } from "@/lib/services/expenseService";
 import { ExpenseCategory, SplitType } from "@/types/expense";
-import { X, Loader2, Utensils, Film, ShoppingBag, Car, Plane, Receipt, Gift, Sparkles, Check } from "lucide-react";
+import { X, Loader2, Utensils, Film, ShoppingBag, Car, Plane, Receipt, Gift, Sparkles, Check, LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { formatRupiah } from "@/lib/utils";
 
@@ -13,7 +13,7 @@ interface AddExpenseModalProps {
   onClose: () => void;
 }
 
-const CATEGORIES: { id: ExpenseCategory; label: string; icon: any }[] = [
+const CATEGORIES: { id: ExpenseCategory; label: string; icon: LucideIcon }[] = [
   { id: "food", label: "Makan & Jajan", icon: Utensils },
   { id: "date", label: "Kencan & Nonton", icon: Film },
   { id: "shopping", label: "Belanja", icon: ShoppingBag },

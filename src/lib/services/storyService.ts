@@ -34,6 +34,8 @@ export async function createStoryPost(
     date: input.date || new Date().toISOString().split("T")[0],
     createdAt: Date.now(),
     quote: input.quote?.trim() || undefined,
+    audioUrl: input.audioUrl || undefined,
+    audioDuration: input.audioDuration || undefined,
   };
 
   await setDoc(postRef, newPost);

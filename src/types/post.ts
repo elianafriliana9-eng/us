@@ -1,4 +1,4 @@
-export type PostCategory = "photo" | "trip" | "milestone" | "daily";
+export type PostCategory = "photo" | "trip" | "milestone" | "daily" | "voice";
 
 export interface Post {
   id: string;
@@ -14,6 +14,8 @@ export interface Post {
   createdAt: number;
   quote?: string;
   badgeText?: string;
+  audioUrl?: string;
+  audioDuration?: number; // duration in seconds
 }
 
 export interface CreatePostInput {
@@ -24,4 +26,6 @@ export interface CreatePostInput {
   images: string[];
   date: string;
   quote?: string;
+  audioUrl?: string;
+  audioDuration?: number;
 }

@@ -31,9 +31,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { LucideIcon } from "lucide-react";
+
 const CATEGORY_MAP: Record<
   ExpenseCategory,
-  { label: string; icon: any; color: string; bg: string }
+  { label: string; icon: LucideIcon; color: string; bg: string }
 > = {
   food: { label: "Makan & Jajan", icon: Utensils, color: "#b80035", bg: "#ffdada" },
   date: { label: "Kencan & Nonton", icon: Film, color: "#d946ef", bg: "#fae8ff" },
@@ -94,7 +96,7 @@ export default function ExpensesPage() {
     return expenses.filter((e) => !e.isSettled && e.category !== "settlement");
   }, [expenses]);
 
-  const { netBalance, partnerOwesMe, meOwePartner } = useMemo(() => {
+  const { netBalance } = useMemo(() => {
     let partnerOwes = 0;
     let meOwes = 0;
 
@@ -117,11 +119,8 @@ export default function ExpensesPage() {
       }
     });
 
-    const net = partnerOwes - meOwes;
     return {
-      netBalance: net,
-      partnerOwesMe: partnerOwes,
-      meOwePartner: meOwes,
+      netBalance: partnerOwes - meOwes,
     };
   }, [unsettledExpenses, currentUser?.id]);
 

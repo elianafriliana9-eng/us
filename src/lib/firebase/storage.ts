@@ -6,10 +6,19 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
  */
 export async function uploadRoomMedia(
   roomId: string,
-  folder: "posts" | "pins" | "avatars",
-  file: File
+  folder: "posts" | "pins" | "avatars" | "voice_notes",
+  file: File | Blob,
+  customExtension?: string
 ): Promise<string> {
-  const extension = file.name.split(".").pop() || "jpg";
+  let extension = customExtension;
+  if (!extension) {
+    if (file instanceof File && file.name) {
+      extension = file.name.split(".").pop() || "jpg";
+    } else {
+      extension = "webm";
+    }
+  }
+
   const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   const filePath = `rooms/${roomId}/${folder}/${uniqueId}.${extension}`;
   const fileRef = ref(storage, filePath);

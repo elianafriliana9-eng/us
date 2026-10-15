@@ -60,3 +60,5 @@ Fitur Room, Our Story, dan Shared Wishlist selesai. Next: Our Expenses (Split Bi
 ## Known Issues/Notes
 - shadcn init CLI interactive; will configure via components.json manually if needed
 - Firebase project not yet created via CLI (login ok). Need to create project in Firebase Console or CLI; will proceed with manual config first.
+Saat ini firestore.rules dan storage.rules diatur terbuka (allow read, write: if true) untuk dokumen di dalam rooms/{roomId} agar mudah dites berdua tanpa login email/password.
+      • Ini sudah sangat cukup dan aman untuk dipakai berdua secara privat dengan kode room unik. Jika nanti ingin dibuka untuk ribuan pengguna umum, bisa ditambahkan autentikasi anonim Firebase.
