@@ -33,6 +33,9 @@ export async function createWishlistItem(
     targetPrice: target,
     currentSaved: target ? saved : undefined,
     progressPercent: percent,
+    targetDate: input.targetDate?.trim() || undefined,
+    targetStartDate: input.targetStartDate?.trim() || undefined,
+    targetEndDate: input.targetEndDate?.trim() || undefined,
     notes: input.notes?.trim() || undefined,
     url: input.url?.trim() || undefined,
     imageUrl: input.imageUrl || undefined,
@@ -70,19 +73,34 @@ export async function updateWishlistProgress(
   roomId: string,
   itemId: string,
   newSaved: number,
-  targetPrice?: number
+  targetPrice?: number,
+  targetDate?: string,
+  targetStartDate?: string,
+  targetEndDate?: string
 ): Promise<void> {
   const itemRef = doc(db, "rooms", roomId, "wishlist", itemId);
   const target = targetPrice || 0;
   const percent = target > 0 ? Math.min(100, Math.round((newSaved / target) * 100)) : 0;
   const isCompleted = target > 0 && newSaved >= target;
 
-  await updateDoc(itemRef, {
+  const updateData: Record<string, unknown> = {
     currentSaved: newSaved,
     progressPercent: percent,
     isCompleted,
     ...(isCompleted ? { completedAt: Date.now() } : { completedAt: null, completedBy: null }),
-  });
+  };
+
+  if (targetDate !== undefined) {
+    updateData.targetDate = targetDate.trim() || null;
+  }
+  if (targetStartDate !== undefined) {
+    updateData.targetStartDate = targetStartDate.trim() || null;
+  }
+  if (targetEndDate !== undefined) {
+    updateData.targetEndDate = targetEndDate.trim() || null;
+  }
+
+  await updateDoc(itemRef, updateData);
 }
 
 export async function toggleWishlistCompleted(

@@ -7,6 +7,9 @@ export interface WishlistItem {
   targetPrice?: number;
   currentSaved?: number;
   progressPercent: number; // 0 - 100
+  targetDate?: string;
+  targetStartDate?: string;
+  targetEndDate?: string;
   notes?: string;
   url?: string;
   imageUrl?: string;
@@ -23,6 +26,9 @@ export interface CreateWishlistInput {
   category: WishlistCategory;
   targetPrice?: number;
   currentSaved?: number;
+  targetDate?: string;
+  targetStartDate?: string;
+  targetEndDate?: string;
   notes?: string;
   url?: string;
   imageUrl?: string;

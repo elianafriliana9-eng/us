@@ -5,7 +5,8 @@ import { useRoomStore } from "@/stores/roomStore";
 import { uploadRoomMedia } from "@/lib/firebase/storage";
 import { createWishlistItem } from "@/lib/services/wishlistService";
 import { WishlistCategory } from "@/types/wishlist";
-import { Gift, X, UploadCloud } from "lucide-react";
+import { formatTargetDateRange } from "@/lib/utils";
+import { Gift, X, UploadCloud, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 interface AddWishlistModalProps {
@@ -18,6 +19,8 @@ export function AddWishlistModal({ isOpen, onClose }: AddWishlistModalProps) {
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<WishlistCategory>("item");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [targetPrice, setTargetPrice] = useState("");
   const [currentSaved, setCurrentSaved] = useState("");
   const [url, setUrl] = useState("");
@@ -25,6 +28,8 @@ export function AddWishlistModal({ isOpen, onClose }: AddWishlistModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
+
+  const formattedDateRange = formatTargetDateRange(startDate, endDate);
 
   if (!isOpen) return null;
 
@@ -61,6 +66,9 @@ export function AddWishlistModal({ isOpen, onClose }: AddWishlistModalProps) {
         category,
         targetPrice: parsedTarget,
         currentSaved: parsedSaved,
+        targetDate: formattedDateRange || undefined,
+        targetStartDate: startDate || undefined,
+        targetEndDate: endDate || undefined,
         notes,
         url,
         imageUrl,
@@ -70,6 +78,8 @@ export function AddWishlistModal({ isOpen, onClose }: AddWishlistModalProps) {
       onClose();
       // Reset form
       setTitle("");
+      setStartDate("");
+      setEndDate("");
       setTargetPrice("");
       setCurrentSaved("");
       setUrl("");
@@ -179,6 +189,52 @@ export function AddWishlistModal({ isOpen, onClose }: AddWishlistModalProps) {
                   {c.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Target Date with Date Pickers */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-[#1e1b19] flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[#e11d48]" />
+                <span>Tanggal Target (Opsional)</span>
+              </label>
+              {formattedDateRange && (
+                <span className="text-[11px] font-bold text-[#b80035] bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-100 animate-in fade-in">
+                  🗓️ {formattedDateRange}
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    const nextStart = e.target.value;
+                    setStartDate(nextStart);
+                    if (endDate && nextStart > endDate) {
+                      setEndDate("");
+                    }
+                  }}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5bdbe] bg-[#faf2ee] text-xs text-[#1e1b19] focus:outline-none focus:ring-2 focus:ring-[#e11d48]"
+                />
+                <span className="text-[10px] text-[#5c3f40]/70 mt-0.5 block pl-1">
+                  Mulai / Target
+                </span>
+              </div>
+              <div>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5bdbe] bg-[#faf2ee] text-xs text-[#1e1b19] focus:outline-none focus:ring-2 focus:ring-[#e11d48]"
+                />
+                <span className="text-[10px] text-[#5c3f40]/70 mt-0.5 block pl-1">
+                  Sampai (cth: 5-7 nov)
+                </span>
+              </div>
             </div>
           </div>
 

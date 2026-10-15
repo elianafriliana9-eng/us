@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoomStore } from "@/stores/roomStore";
 import { updateWishlistProgress, toggleWishlistCompleted, deleteWishlistItem } from "@/lib/services/wishlistService";
 import { WishlistItem } from "@/types/wishlist";
-import { Sparkles, X, CheckCircle2, Trash2 } from "lucide-react";
+import { formatTargetDateRange } from "@/lib/utils";
+import { Sparkles, X, CheckCircle2, Trash2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 interface AdjustProgressModalProps {
@@ -21,7 +22,19 @@ export function AdjustProgressModal({
   const { room, currentUser } = useRoomStore();
 
   const [savedAmount, setSavedAmount] = useState<number>(item?.currentSaved || 0);
+  const [startDate, setStartDate] = useState<string>(item?.targetStartDate || "");
+  const [endDate, setEndDate] = useState<string>(item?.targetEndDate || "");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (item) {
+      setSavedAmount(item.currentSaved || 0);
+      setStartDate(item.targetStartDate || "");
+      setEndDate(item.targetEndDate || "");
+    }
+  }, [item]);
+
+  const formattedDateRange = formatTargetDateRange(startDate, endDate) || (startDate ? "" : item?.targetDate || "");
 
   // Sync state when item changes
   const target = item?.targetPrice || 0;
@@ -38,7 +51,15 @@ export function AdjustProgressModal({
     if (!room) return;
     setLoading(true);
     try {
-      await updateWishlistProgress(room.id, item.id, savedAmount, item.targetPrice);
+      await updateWishlistProgress(
+        room.id,
+        item.id,
+        savedAmount,
+        item.targetPrice,
+        formattedDateRange,
+        startDate,
+        endDate
+      );
       if (item.targetPrice && savedAmount >= item.targetPrice) {
         toast.success(`Horeee! Impian "${item.title}" sudah 100% tercapai! 🎉💖`);
       } else {
@@ -174,6 +195,52 @@ export function AdjustProgressModal({
               />
             </div>
           )}
+
+          {/* Target Date with Date Pickers */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-[#1e1b19] flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[#e11d48]" />
+                <span>Tanggal Target (Opsional)</span>
+              </label>
+              {formattedDateRange && (
+                <span className="text-[11px] font-bold text-[#b80035] bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-100 animate-in fade-in">
+                  🗓️ {formattedDateRange}
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    const nextStart = e.target.value;
+                    setStartDate(nextStart);
+                    if (endDate && nextStart > endDate) {
+                      setEndDate("");
+                    }
+                  }}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5bdbe] bg-[#faf2ee] text-xs text-[#1e1b19] focus:outline-none focus:ring-2 focus:ring-[#e11d48]"
+                />
+                <span className="text-[10px] text-[#5c3f40]/70 mt-0.5 block pl-1">
+                  Mulai / Target
+                </span>
+              </div>
+              <div>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5bdbe] bg-[#faf2ee] text-xs text-[#1e1b19] focus:outline-none focus:ring-2 focus:ring-[#e11d48]"
+                />
+                <span className="text-[10px] text-[#5c3f40]/70 mt-0.5 block pl-1">
+                  Sampai (cth: 5-7 nov)
+                </span>
+              </div>
+            </div>
+          </div>
 
           {/* Mark as Completed Button */}
           <div className="pt-1">

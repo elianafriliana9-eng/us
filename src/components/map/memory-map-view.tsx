@@ -20,11 +20,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  subscribeToCoupleLocations,
-  updatePartnerLocation,
-} from "@/lib/services/locationService";
-import { PartnerLocation } from "@/types/location";
 
 interface NominatimPlace {
   place_id: number;
@@ -62,60 +57,6 @@ function formatMemoryDate(dateStr: string) {
   } catch {
     return dateStr;
   }
-}
-
-function calculateDistanceKm(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-function createCoupleMarkerIcon(name: string, isCurrentUser: boolean) {
-  const initial = (name || "U").trim().charAt(0).toUpperCase();
-  const label = isCurrentUser ? "Kamu 💕" : `${name} 💖`;
-  const bgGradient = isCurrentUser
-    ? "from-[#b80035] to-[#f43f5e]"
-    : "from-[#ec4899] to-[#fb7185]";
-  const pulseColor = isCurrentUser ? "bg-rose-500/35" : "bg-pink-500/35";
-
-  const html = `
-    <div class="relative flex flex-col items-center justify-center cursor-pointer select-none">
-      <div class="absolute w-12 h-12 rounded-full ${pulseColor} animate-ping pointer-events-none -translate-y-1"></div>
-      <div class="relative flex flex-col items-center">
-        <div class="px-2 py-0.5 rounded-full ${
-          isCurrentUser ? "bg-[#1e1b19]" : "bg-[#b80035]"
-        } text-white text-[10px] font-bold shadow-md whitespace-nowrap mb-1 flex items-center gap-1 border border-white/40">
-          <span class="w-1.5 h-1.5 rounded-full ${
-            isCurrentUser ? "bg-emerald-400" : "bg-rose-300"
-          } animate-pulse"></span>
-          <span>${label}</span>
-        </div>
-        <div class="w-8 h-8 rounded-full bg-gradient-to-tr ${bgGradient} text-white border-2 border-white shadow-lg flex items-center justify-center text-xs font-black">
-          ${initial}
-        </div>
-      </div>
-    </div>
-  `;
-
-  return L.divIcon({
-    className: "custom-couple-marker",
-    html,
-    iconSize: [48, 54],
-    iconAnchor: [24, 38],
-  });
 }
 
 function createPinIcon(pin: MemoryPin, isSelected: boolean = false) {
@@ -168,12 +109,10 @@ export default function MemoryMapView() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
-  const coupleLayerRef = useRef<L.LayerGroup | null>(null);
   const tempMarkerRef = useRef<L.Marker | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const initialCenteredRef = useRef<boolean>(false);
-  const initialCoupleFittedRef = useRef<boolean>(false);
 
   const [pins, setPins] = useState<MemoryPin[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -184,9 +123,8 @@ export default function MemoryMapView() {
   const [isLocating, setIsLocating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Live Couple Location & GPS state
+  // GPS state (local only, for navigation and adding pins)
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [coupleLocations, setCoupleLocations] = useState<PartnerLocation[]>([]);
 
   // Search places & memories state
   const [searchQuery, setSearchQuery] = useState("");
@@ -416,13 +354,12 @@ export default function MemoryMapView() {
     toast.success(`Peta diarahkan ke ${name} 📍`);
   };
 
-  // Automatic Geolocation & Location Sync on Map Open
+  // Automatic Geolocation on Map Open (local only)
   useEffect(() => {
     if (!navigator.geolocation) return;
 
     let isCancelled = false;
 
-    // Immediate GPS lookup on open
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         if (isCancelled) return;
@@ -432,18 +369,7 @@ export default function MemoryMapView() {
 
         setUserCoords({ lat, lng });
 
-        // Broadcast to Firestore for partner to see
-        if (room && currentUser) {
-          updatePartnerLocation(room.id, {
-            userId: currentUser.id,
-            userName: currentUser.name,
-            lat,
-            lng,
-            updatedAt: Date.now(),
-          }).catch(console.error);
-        }
-
-        // Center map to user's location on open
+        // Center map to user's location on open if no pins are centered
         if (mapInstanceRef.current && !initialCenteredRef.current) {
           initialCenteredRef.current = true;
           mapInstanceRef.current.flyTo([lat, lng], 15, { duration: 1 });
@@ -455,44 +381,10 @@ export default function MemoryMapView() {
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
     );
 
-    // Watch position as user moves
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        if (isCancelled) return;
-        const { latitude, longitude } = pos.coords;
-        const lat = Number(latitude.toFixed(6));
-        const lng = Number(longitude.toFixed(6));
-
-        setUserCoords({ lat, lng });
-
-        if (room && currentUser) {
-          updatePartnerLocation(room.id, {
-            userId: currentUser.id,
-            userName: currentUser.name,
-            lat,
-            lng,
-            updatedAt: Date.now(),
-          }).catch(console.error);
-        }
-      },
-      () => {},
-      { enableHighAccuracy: true, maximumAge: 30000 }
-    );
-
     return () => {
       isCancelled = true;
-      navigator.geolocation.clearWatch(watchId);
     };
-  }, [room, currentUser]);
-
-  // Subscribe to couple locations in Firestore
-  useEffect(() => {
-    if (!room) return;
-    const unsubscribe = subscribeToCoupleLocations(room.id, (locations) => {
-      setCoupleLocations(locations);
-    });
-    return () => unsubscribe();
-  }, [room]);
+  }, []);
 
   // Initialize Map
   useEffect(() => {
@@ -519,9 +411,6 @@ export default function MemoryMapView() {
         position: "topright",
       })
       .addTo(map);
-
-    const coupleLayer = L.layerGroup().addTo(map);
-    coupleLayerRef.current = coupleLayer;
 
     const markersLayer = L.layerGroup().addTo(map);
     markersLayerRef.current = markersLayer;
@@ -586,80 +475,9 @@ export default function MemoryMapView() {
     return () => {
       map.remove();
       mapInstanceRef.current = null;
-      coupleLayerRef.current = null;
       markersLayerRef.current = null;
     };
   }, [handleOpenAddModal]);
-
-  // Render Couple Markers & Romantic Love Line
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const coupleLayer = coupleLayerRef.current;
-    if (!map || !coupleLayer) return;
-
-    coupleLayer.clearLayers();
-
-    const myLoc =
-      userCoords ||
-      coupleLocations.find((l) => l.userId === currentUser?.id);
-
-    const partnerLoc = coupleLocations.find(
-      (l) => l.userId !== currentUser?.id
-    );
-
-    const points: L.LatLngExpression[] = [];
-
-    // Current User Marker ("Kamu 💕")
-    if (myLoc) {
-      const myIcon = createCoupleMarkerIcon(currentUser?.name || "Kamu", true);
-      const myMarker = L.marker([myLoc.lat, myLoc.lng], {
-        icon: myIcon,
-        zIndexOffset: 1000,
-      });
-      coupleLayer.addLayer(myMarker);
-      points.push([myLoc.lat, myLoc.lng]);
-    }
-
-    // Partner Marker
-    if (partnerLoc) {
-      const partnerIcon = createCoupleMarkerIcon(
-        partnerLoc.userName || "Pasangan",
-        false
-      );
-      const partnerMarker = L.marker([partnerLoc.lat, partnerLoc.lng], {
-        icon: partnerIcon,
-        zIndexOffset: 990,
-      });
-      coupleLayer.addLayer(partnerMarker);
-      points.push([partnerLoc.lat, partnerLoc.lng]);
-    }
-
-    // Connect them with a romantic love line if both exist
-    if (myLoc && partnerLoc) {
-      const loveLine = L.polyline(
-        [
-          [myLoc.lat, myLoc.lng],
-          [partnerLoc.lat, partnerLoc.lng],
-        ],
-        {
-          color: "#e11d48",
-          weight: 2.5,
-          opacity: 0.75,
-          dashArray: "6, 8",
-        }
-      );
-      coupleLayer.addLayer(loveLine);
-
-      // Auto fit both lovers on first time both locations are ready
-      if (!initialCoupleFittedRef.current && points.length === 2) {
-        initialCoupleFittedRef.current = true;
-        map.fitBounds(L.latLngBounds(points), {
-          padding: [90, 90],
-          maxZoom: 16,
-        });
-      }
-    }
-  }, [coupleLocations, userCoords, currentUser]);
 
   // Render Pins whenever pins or filter changes
   useEffect(() => {
@@ -730,10 +548,9 @@ export default function MemoryMapView() {
     } else if (
       latLngs.length > 0 &&
       !selectedPin &&
-      !initialCenteredRef.current &&
-      !initialCoupleFittedRef.current
+      !initialCenteredRef.current
     ) {
-      // If first load with pins and no couple fitted yet, fit bounds
+      // If first load with pins, fit bounds
       const bounds = L.latLngBounds(latLngs);
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
     }
@@ -752,16 +569,6 @@ export default function MemoryMapView() {
         const lat = Number(latitude.toFixed(6));
         const lng = Number(longitude.toFixed(6));
         setUserCoords({ lat, lng });
-
-        if (room && currentUser) {
-          updatePartnerLocation(room.id, {
-            userId: currentUser.id,
-            userName: currentUser.name,
-            lat,
-            lng,
-            updatedAt: Date.now(),
-          }).catch(console.error);
-        }
 
         if (mapInstanceRef.current) {
           mapInstanceRef.current.flyTo([lat, lng], 16, { duration: 1.2 });
@@ -795,24 +602,6 @@ export default function MemoryMapView() {
     }
   };
 
-  const myLocation =
-    userCoords ||
-    coupleLocations.find((l) => l.userId === currentUser?.id);
-
-  const partnerLocation = coupleLocations.find(
-    (l) => l.userId !== currentUser?.id
-  );
-
-  const coupleDistance =
-    myLocation && partnerLocation
-      ? calculateDistanceKm(
-          myLocation.lat,
-          myLocation.lng,
-          partnerLocation.lat,
-          partnerLocation.lng
-        )
-      : null;
-
   return (
     <div className="relative w-full h-[calc(100vh-140px)] min-h-[500px] rounded-3xl overflow-hidden shadow-[0_10px_25px_-5px_rgba(68,64,60,0.08)] border border-[#e5bdbe]/60 bg-[#faf2ee]">
       {/* OpenStreetMap Container */}
@@ -837,62 +626,6 @@ export default function MemoryMapView() {
             <span>Tambah Pin</span>
           </button>
         </div>
-
-        {/* Couple Live Distance Widget */}
-        {partnerLocation && myLocation ? (
-          <div className="flex items-center justify-between px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-md shadow-sm border border-[#e5bdbe]/80 pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping shrink-0" />
-              <span className="text-[11px] font-bold text-[#1e1b19] truncate">
-                {partnerLocation.userName}:
-              </span>
-              <span className="text-[11px] font-semibold text-[#b80035] truncate">
-                {coupleDistance !== null && coupleDistance < 0.1
-                  ? "Sedang bersama! 💕"
-                  : coupleDistance !== null
-                  ? `${
-                      coupleDistance < 1
-                        ? Math.round(coupleDistance * 1000) + " m"
-                        : coupleDistance.toFixed(1) + " km"
-                    } dari kamu`
-                  : "Lokasi terdeteksi 💖"}
-              </span>
-            </div>
-            <button
-              onClick={() => {
-                if (mapInstanceRef.current) {
-                  mapInstanceRef.current.flyTo(
-                    [partnerLocation.lat, partnerLocation.lng],
-                    16,
-                    { duration: 1.2 }
-                  );
-                }
-              }}
-              className="ml-2 text-[10px] font-bold text-[#b80035] hover:underline flex items-center gap-0.5 shrink-0"
-            >
-              Lihat 💖
-            </button>
-          </div>
-        ) : !partnerLocation && myLocation ? (
-          <div className="flex items-center justify-between px-3 py-1 rounded-full bg-white/90 backdrop-blur-md shadow-xs border border-[#e5bdbe]/60 pointer-events-auto">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-medium text-[#5c3f40]">
-                Lokasimu aktif di peta 📍
-              </span>
-            </div>
-            <button
-              onClick={() => {
-                if (mapInstanceRef.current) {
-                  mapInstanceRef.current.flyTo([myLocation.lat, myLocation.lng], 16, { duration: 1 });
-                }
-              }}
-              className="text-[10px] font-bold text-[#b80035] hover:underline"
-            >
-              Ke Lokasiku
-            </button>
-          </div>
-        ) : null}
 
         {/* Search Bar Input & Autocomplete Dropdown */}
         <div ref={searchContainerRef} className="relative pointer-events-auto">

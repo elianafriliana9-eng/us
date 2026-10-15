@@ -85,3 +85,38 @@ export function calculateRelationshipStats(
     hasCustomDate: false,
   };
 }
+
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+  "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+];
+
+export function formatTargetDateRange(startDate?: string, endDate?: string): string {
+  if (!startDate) return "";
+
+  const startParts = startDate.split("-").map(Number);
+  if (startParts.length !== 3) return startDate;
+  const [sYear, sMonth, sDay] = startParts;
+  const sMonthName = MONTH_NAMES[sMonth - 1] || "";
+
+  if (!endDate || endDate === startDate) {
+    return `${sDay} ${sMonthName} ${sYear}`;
+  }
+
+  const endParts = endDate.split("-").map(Number);
+  if (endParts.length !== 3) {
+    return `${sDay} ${sMonthName} ${sYear}`;
+  }
+  const [eYear, eMonth, eDay] = endParts;
+  const eMonthName = MONTH_NAMES[eMonth - 1] || "";
+
+  if (sYear === eYear && sMonth === eMonth) {
+    return `${sDay} - ${eDay} ${sMonthName} ${sYear}`;
+  }
+
+  if (sYear === eYear) {
+    return `${sDay} ${sMonthName} - ${eDay} ${eMonthName} ${sYear}`;
+  }
+
+  return `${sDay} ${sMonthName} ${sYear} - ${eDay} ${eMonthName} ${eYear}`;
+}

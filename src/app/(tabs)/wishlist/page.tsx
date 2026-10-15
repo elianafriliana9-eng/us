@@ -6,7 +6,7 @@ import { subscribeToWishlist } from "@/lib/services/wishlistService";
 import { AddWishlistModal } from "@/components/wishlist/add-wishlist-modal";
 import { AdjustProgressModal } from "@/components/wishlist/adjust-progress-modal";
 import { WishlistItem, WishlistCategory } from "@/types/wishlist";
-import { Gift, Plus, ExternalLink, CheckCircle2, TrendingUp } from "lucide-react";
+import { Gift, Plus, ExternalLink, CheckCircle2, TrendingUp, Calendar } from "lucide-react";
 
 export default function WishlistPage() {
   const { room, currentUser } = useRoomStore();
@@ -163,14 +163,23 @@ export default function WishlistPage() {
                 key={item.id}
                 className="bg-white rounded-3xl p-4 shadow-[0_10px_25px_-5px_rgba(68,64,60,0.06),0_8px_10px_-6px_rgba(225,29,72,0.04)] border border-rose-100/50 flex flex-col space-y-3 transition-all"
               >
-                {/* Header row: Category & Completed Status */}
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#ffddb8]/50 text-[#653e00] text-[11px] font-bold capitalize">
-                    {item.category === "item" && "🎁 Barang"}
-                    {item.category === "trip" && "✈️ Liburan / Trip"}
-                    {item.category === "future" && "💍 Masa Depan"}
-                    {item.category === "daily" && "☕ Hal Lucu"}
-                  </span>
+                {/* Header row: Category & Target Date & Completed Status */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#ffddb8]/50 text-[#653e00] text-[11px] font-bold capitalize">
+                      {item.category === "item" && "🎁 Barang"}
+                      {item.category === "trip" && "✈️ Liburan / Trip"}
+                      {item.category === "future" && "💍 Masa Depan"}
+                      {item.category === "daily" && "☕ Hal Lucu"}
+                    </span>
+
+                    {item.targetDate && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-[#b80035] text-[11px] font-bold border border-rose-100">
+                        <Calendar className="w-3 h-3 text-[#e11d48]" />
+                        <span>Target: {item.targetDate}</span>
+                      </span>
+                    )}
+                  </div>
 
                   {item.isCompleted ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#00845a]/15 text-[#00845a] text-[11px] font-bold">
