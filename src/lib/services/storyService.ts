@@ -9,6 +9,7 @@ import {
   orderBy,
   onSnapshot,
   Unsubscribe,
+  removeUndefinedFields,
 } from "@/lib/firebase/firestore";
 import { Post, CreatePostInput } from "@/types/post";
 import { CurrentUser } from "@/types/room";
@@ -38,7 +39,7 @@ export async function createStoryPost(
     audioDuration: input.audioDuration || undefined,
   };
 
-  await setDoc(postRef, newPost);
+  await setDoc(postRef, removeUndefinedFields(newPost));
   return newPost;
 }
 

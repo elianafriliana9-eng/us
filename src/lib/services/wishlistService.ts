@@ -9,6 +9,7 @@ import {
   orderBy,
   onSnapshot,
   Unsubscribe,
+  removeUndefinedFields,
 } from "@/lib/firebase/firestore";
 import { WishlistItem, CreateWishlistInput } from "@/types/wishlist";
 import { CurrentUser } from "@/types/room";
@@ -43,7 +44,7 @@ export async function createWishlistItem(
     createdAt: Date.now(),
   };
 
-  await setDoc(itemRef, newItem);
+  await setDoc(itemRef, removeUndefinedFields(newItem));
   return newItem;
 }
 

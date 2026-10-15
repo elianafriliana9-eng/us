@@ -8,6 +8,7 @@ import {
   orderBy,
   onSnapshot,
   Unsubscribe,
+  removeUndefinedFields,
 } from "@/lib/firebase/firestore";
 import { MemoryPin, CreatePinInput } from "@/types/pin";
 import { CurrentUser } from "@/types/room";
@@ -35,7 +36,7 @@ export async function createMemoryPin(
     createdAt: Date.now(),
   };
 
-  await setDoc(pinRef, newPin);
+  await setDoc(pinRef, removeUndefinedFields(newPin));
   return newPin;
 }
 

@@ -9,6 +9,7 @@ import {
   orderBy,
   onSnapshot,
   Unsubscribe,
+  removeUndefinedFields,
 } from "@/lib/firebase/firestore";
 import { Expense, CreateExpenseInput } from "@/types/expense";
 import { CurrentUser } from "@/types/room";
@@ -40,7 +41,7 @@ export async function createExpense(
     createdBy: author.id,
   };
 
-  await setDoc(expenseRef, newExpense);
+  await setDoc(expenseRef, removeUndefinedFields(newExpense));
   return newExpense;
 }
 
