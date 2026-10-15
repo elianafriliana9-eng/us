@@ -1,69 +1,233 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useRoomStore } from "@/stores/roomStore";
+import { createRoom, joinRoomByCode } from "@/lib/services/roomService";
+import { Heart, Sparkles, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+
+function RoomOnboardingContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialCode = searchParams.get("join") || "";
+
+  const { room, isHydrated, setRoom, setCurrentUser } = useRoomStore();
+
+  const [mode, setMode] = useState<"create" | "join">(initialCode ? "join" : "create");
+  const [userName, setUserName] = useState("");
+  const [roomCode, setRoomCode] = useState(initialCode);
+  const [loading, setLoading] = useState(false);
+
+  // If already in a room, redirect straight to story
+  useEffect(() => {
+    if (isHydrated && room) {
+      router.replace("/story");
+    }
+  }, [isHydrated, room, router]);
+
+  const handleCreateRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userName.trim()) {
+      toast.error("Tuliskan nama panggilanmu dulu ya!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { room: newRoom, currentUser } = await createRoom(userName);
+      setRoom(newRoom);
+      setCurrentUser(currentUser);
+      toast.success(`Room berhasil dibuat! Kode: ${newRoom.code}`);
+      router.replace("/story");
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Gagal membuat room. Coba lagi.";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userName.trim()) {
+      toast.error("Tuliskan nama panggilanmu dulu ya!");
+      return;
+    }
+    if (!roomCode.trim()) {
+      toast.error("Masukkan kode room dari pasanganmu!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { room: joinedRoom, currentUser } = await joinRoomByCode(
+        roomCode,
+        userName
+      );
+      setRoom(joinedRoom);
+      setCurrentUser(currentUser);
+      toast.success(`Berhasil bergabung ke room! 💕`);
+      router.replace("/story");
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Gagal bergabung. Pastikan kodenya benar.";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isHydrated) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-[#fff8f5]">
+        <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#b80035] border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex min-h-dvh flex-col justify-between p-6 bg-[#fff8f5] text-[#1e1b19]">
+      <div className="flex flex-col items-center text-center pt-8">
+        {/* Logo Badge */}
+        <div className="relative mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-linear-to-tr from-[#b80035] to-[#e11d48] text-white shadow-xl shadow-rose-900/15">
+          <Heart className="w-9 h-9 fill-white text-white" />
+          <div className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#ffddb8] text-[#855300] shadow-xs">
+            <Sparkles className="w-3.5 h-3.5" />
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <h1 className="text-3xl font-extrabold tracking-tight text-[#b80035]">
+          Us
+        </h1>
+        <p className="mt-1 text-sm text-[#5c3f40] max-w-[280px] leading-relaxed">
+          Ruang privat untuk dua hati berbagi momen, cerita, dan rencana berdua.
+        </p>
+
+        {/* Mode Switcher */}
+        <div className="mt-7 flex w-full max-w-xs rounded-2xl bg-[#f4ece8] p-1 border border-[#eee7e3]">
+          <button
+            type="button"
+            onClick={() => setMode("create")}
+            className={`flex-1 rounded-xl py-2.5 text-xs font-bold transition-all ${
+              mode === "create"
+                ? "bg-white text-[#b80035] shadow-xs"
+                : "text-[#5c3f40] hover:text-[#1e1b19]"
+            }`}
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Buat Room
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("join")}
+            className={`flex-1 rounded-xl py-2.5 text-xs font-bold transition-all ${
+              mode === "join"
+                ? "bg-white text-[#b80035] shadow-xs"
+                : "text-[#5c3f40] hover:text-[#1e1b19]"
+            }`}
           >
-            Documentation
-          </a>
+            Gabung Room
+          </button>
         </div>
-      </main>
+
+        {/* Card Form */}
+        <div className="mt-5 w-full">
+          {mode === "create" ? (
+            <div className="rounded-3xl bg-white p-5 shadow-[0_10px_25px_-5px_rgba(68,64,60,0.06),0_8px_10px_-6px_rgba(225,29,72,0.04)] border border-rose-100/50 text-left">
+              <h2 className="text-base font-bold text-[#1e1b19]">Mulai Ruang Privat</h2>
+              <p className="text-xs text-[#5c3f40] mt-0.5 mb-4">
+                Buat room baru lalu bagikan kodenya ke pasanganmu.
+              </p>
+              <form onSubmit={handleCreateRoom} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#1e1b19]">
+                    Nama Panggilanmu
+                  </label>
+                  <input
+                    placeholder="Contoh: Bubu, Sayang, Abi..."
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    maxLength={30}
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5bdbe] bg-[#faf2ee] text-sm text-[#1e1b19] focus:outline-none focus:ring-2 focus:ring-[#e11d48]"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-12 rounded-full bg-[#e11d48] text-white text-xs font-bold shadow-md shadow-rose-500/25 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {loading ? "Membuat Room..." : "Buat Ruang Kita 💖"}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="rounded-3xl bg-white p-5 shadow-[0_10px_25px_-5px_rgba(68,64,60,0.06),0_8px_10px_-6px_rgba(225,29,72,0.04)] border border-rose-100/50 text-left">
+              <h2 className="text-base font-bold text-[#1e1b19]">Gabung ke Room Pasangan</h2>
+              <p className="text-xs text-[#5c3f40] mt-0.5 mb-4">
+                Masukkan kode room 6-karakter yang dibagikan pasanganmu.
+              </p>
+              <form onSubmit={handleJoinRoom} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#1e1b19]">
+                    Nama Panggilanmu
+                  </label>
+                  <input
+                    placeholder="Contoh: Didi, Sayang..."
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    maxLength={30}
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5bdbe] bg-[#faf2ee] text-sm text-[#1e1b19] focus:outline-none focus:ring-2 focus:ring-[#e11d48]"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#1e1b19]">
+                    Kode Room (6 Karakter)
+                  </label>
+                  <input
+                    placeholder="Contoh: 7K9A2M"
+                    value={roomCode}
+                    onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                    maxLength={8}
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5bdbe] bg-[#faf2ee] text-base font-mono font-bold text-center tracking-widest uppercase text-[#b80035] focus:outline-none focus:ring-2 focus:ring-[#e11d48]"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-12 rounded-full bg-[#e11d48] text-white text-xs font-bold shadow-md shadow-rose-500/25 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {loading ? "Menghubungkan..." : "Gabung Sekarang ✨"}
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer Info */}
+      <div className="mt-8 flex items-center justify-center gap-1.5 text-center text-xs text-[#5c3f40] pb-safe">
+        <ShieldCheck className="w-4 h-4 text-[#00845a]" />
+        <span>Data privat terisolasi, khusus hanya untuk kalian berdua</span>
+      </div>
     </div>
+  );
+}
+
+export default function RoomOnboardingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-dvh items-center justify-center bg-[#fff8f5]">
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#b80035] border-t-transparent" />
+        </div>
+      }
+    >
+      <RoomOnboardingContent />
+    </Suspense>
   );
 }

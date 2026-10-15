@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
+import withPWAInit from "next-pwa";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
   turbopack: {
     rules: {
       "*.css": {
@@ -12,6 +10,17 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
 };
 
-export default nextConfig;
+const withPWA = withPWAInit({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development",
+  buildExcludes: [/middleware-manifest\.json$/],
+});
+
+export default withPWA(nextConfig as Parameters<typeof withPWA>[0]);
