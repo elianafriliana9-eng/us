@@ -3,8 +3,9 @@
 import { useRoomStore } from "@/stores/roomStore";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Home, Users, Check, Copy, Lock, LogOut } from "lucide-react";
+import { Home, Users, Check, Copy, Lock, LogOut, UserMinus } from "lucide-react";
 import { toast } from "sonner";
+import { resetPartnerSlot } from "@/lib/services/roomService";
 
 export default function MorePage() {
   const router = useRouter();
@@ -31,6 +32,21 @@ export default function MorePage() {
       leaveRoom();
       toast.info("Kamu telah keluar dari room");
       router.replace("/");
+    }
+  };
+
+  const handleResetPartner = async () => {
+    if (
+      confirm(
+        "Kosongkan slot pasangan? Gunakan ini jika slot pasangan tertukar atau duplikat, agar pasanganmu yang sebenarnya bisa bergabung kembali."
+      )
+    ) {
+      try {
+        await resetPartnerSlot(room.id);
+        toast.success("Slot pasangan berhasil dikosongkan. Siap untuk pasangan bergabung!");
+      } catch {
+        toast.error("Gagal mengosongkan slot pasangan");
+      }
     }
   };
 
@@ -79,22 +95,35 @@ export default function MorePage() {
 
         {/* Partner pill */}
         {partner ? (
-          <div className="flex items-center justify-between rounded-2xl bg-[#faf2ee] p-3 border border-[#eee7e3]">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffddb8] text-[#855300] font-bold text-sm">
-                {partner.name.charAt(0).toUpperCase()}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-2xl bg-[#faf2ee] p-3 border border-[#eee7e3]">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffddb8] text-[#855300] font-bold text-sm">
+                  {partner.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#1e1b19]">
+                    {partner.name}{" "}
+                    <span className="text-[10px] text-[#855300] font-normal">(Pasangan)</span>
+                  </p>
+                  <p className="text-[10px] text-[#5c3f40]">Terhubung 💕</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold text-[#1e1b19]">
-                  {partner.name}{" "}
-                  <span className="text-[10px] text-[#855300] font-normal">(Pasangan)</span>
-                </p>
-                <p className="text-[10px] text-[#5c3f40]">Terhubung 💕</p>
-              </div>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#00845a]/15 text-[#00845a]">
+                Tersambung
+              </span>
             </div>
-            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#00845a]/15 text-[#00845a]">
-              Tersambung
-            </span>
+
+            {currentUser?.role === "creator" && (
+              <button
+                onClick={handleResetPartner}
+                className="w-full py-2 px-3 rounded-xl border border-rose-200/80 bg-rose-50/50 hover:bg-rose-100/60 text-[#b80035] text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                title="Hapus slot pasangan jika terisi akun duplikat atau ingin mengundang ulang"
+              >
+                <UserMinus className="w-3.5 h-3.5" />
+                <span>Reset / Kosongkan Slot Pasangan (Jika Duplikat)</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-[#fea619] bg-[#ffddb8]/20 p-4 text-center">
@@ -135,14 +164,17 @@ export default function MorePage() {
       </div>
 
       {/* Leave Room Button */}
-      <div className="pt-2">
+      <div className="pt-2 text-center space-y-1.5">
         <button
           onClick={handleLeaveRoom}
-          className="w-full h-11 rounded-full border border-[#ffdad6] bg-white text-[#ba1a1a] text-xs font-bold hover:bg-[#ffdad6]/30 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+          className="w-full h-11 rounded-full border border-[#ffdad6] bg-white text-[#ba1a1a] text-xs font-bold hover:bg-[#ffdad6]/30 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
-          <span>Keluar dari Ruang</span>
+          <span>Keluar dari Ruang (Logout dari HP Ini)</span>
         </button>
+        <p className="text-[10px] text-[#5c3f40]/70">
+          Data kalian tetap tersimpan di cloud. Kamu bisa masuk kembali kapan saja dengan kode room.
+        </p>
       </div>
     </div>
   );

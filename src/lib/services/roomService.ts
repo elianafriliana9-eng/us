@@ -2,6 +2,7 @@ import {
   db,
   doc,
   collection,
+  getDoc,
   setDoc,
   getDocs,
   updateDoc,
@@ -67,9 +68,25 @@ export async function createRoom(creatorName: string): Promise<{
   return { room: roomData, currentUser };
 }
 
+export async function getRoomByCode(code: string): Promise<Room | null> {
+  const cleanCode = code.trim().toUpperCase();
+  if (!cleanCode) return null;
+
+  const q = query(
+    collection(db, "rooms"),
+    where("code", "==", cleanCode),
+    limit(1)
+  );
+
+  const querySnapshot = await getDocs(q);
+  if (querySnapshot.empty) return null;
+  return querySnapshot.docs[0].data() as Room;
+}
+
 export async function joinRoomByCode(
   inputCode: string,
-  partnerName: string
+  partnerName: string = "",
+  selectedMemberId?: string
 ): Promise<{
   room: Room;
   currentUser: CurrentUser;
@@ -79,9 +96,6 @@ export async function joinRoomByCode(
 
   if (!cleanCode) {
     throw new Error("Kode room harus diisi");
-  }
-  if (!cleanName) {
-    throw new Error("Nama tidak boleh kosong");
   }
 
   const q = query(
@@ -98,10 +112,63 @@ export async function joinRoomByCode(
 
   const roomDoc = querySnapshot.docs[0];
   const roomData = roomDoc.data() as Room;
-  const members = roomData.members || [];
+  let members = roomData.members || [];
 
+  // 1. Auto-deduplicate if room accidentally has duplicate members with same name
+  const memberNamesLower = members.map((m) => m.name.trim().toLowerCase());
+  const hasDuplicateNames = new Set(memberNamesLower).size < members.length;
+  if (members.length >= 2 && hasDuplicateNames) {
+    const creator = members.find((m) => m.role === "creator") || members[0];
+    members = [creator];
+    await updateDoc(roomDoc.ref, {
+      members,
+      connectedAt: null,
+    });
+    roomData.members = members;
+    roomData.connectedAt = undefined;
+  }
+
+  // 2. Check if re-entering by selected member ID
+  if (selectedMemberId) {
+    const matched = members.find((m) => m.id === selectedMemberId);
+    if (matched) {
+      const currentUser: CurrentUser = {
+        id: matched.id,
+        name: matched.name,
+        role: matched.role,
+      };
+      return { room: roomData, currentUser };
+    }
+  }
+
+  // 3. Check if cleanName matches an existing member (case-insensitive)
+  if (cleanName) {
+    const existingMember = members.find(
+      (m) => m.name.trim().toLowerCase() === cleanName.toLowerCase()
+    );
+
+    if (existingMember) {
+      // Re-enter room as this existing member! No duplicate!
+      const currentUser: CurrentUser = {
+        id: existingMember.id,
+        name: existingMember.name,
+        role: existingMember.role,
+      };
+      return { room: roomData, currentUser };
+    }
+  }
+
+  // 4. If name not matched and room already has 2 distinct members:
   if (members.length >= 2) {
-    throw new Error("Room ini sudah penuh (khusus 2 orang).");
+    const names = members.map((m) => `"${m.name}"`).join(" & ");
+    throw new Error(
+      `Room ini sudah memiliki 2 anggota (${names}). Silakan pilih nama akunmu untuk masuk kembali.`
+    );
+  }
+
+  // 5. If joining as a new partner for the first time
+  if (!cleanName) {
+    throw new Error("Tuliskan nama panggilanmu");
   }
 
   const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -138,6 +205,21 @@ export async function joinRoomByCode(
   };
 
   return { room: updatedRoom, currentUser };
+}
+
+export async function resetPartnerSlot(roomId: string): Promise<void> {
+  const roomRef = doc(db, "rooms", roomId);
+  const roomSnap = await getDoc(roomRef);
+  if (!roomSnap.exists()) return;
+  const roomData = roomSnap.data() as Room;
+  const creator =
+    (roomData.members || []).find((m) => m.role === "creator") || roomData.members[0];
+  if (creator) {
+    await updateDoc(roomRef, {
+      members: [creator],
+      connectedAt: null,
+    });
+  }
 }
 
 export function subscribeToRoom(
