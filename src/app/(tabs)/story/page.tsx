@@ -18,15 +18,20 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
-import { calculateRelationshipStats } from "@/lib/utils";
+import { calculateRelationshipStats, triggerFloatingHearts } from "@/lib/utils";
+import { isUserOnline, formatLastSeen } from "@/lib/services/presenceService";
+import { sendHeartNudge } from "@/lib/services/nudgeService";
 import { EditDateModal } from "@/components/story/edit-date-modal";
 import { VoiceNoteModal } from "@/components/story/voice-note-modal";
 import { AudioPlayer } from "@/components/story/audio-player";
 
 export default function StoryPage() {
-  const { room, currentUser } = useRoomStore();
+  const { room, currentUser, presenceMap } = useRoomStore();
   const partner = room?.members.find((m) => m.id !== currentUser?.id);
   const isSolo = !partner || (room?.members.length ?? 0) < 2;
+
+  const partnerPresence = partner ? presenceMap[partner.id] : undefined;
+  const partnerOnline = isUserOnline(partnerPresence);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [filter, setFilter] = useState<"all" | PostCategory>("all");
@@ -59,34 +64,26 @@ export default function StoryPage() {
   const daysUntilNextAnniversary = stats.daysUntilNextAnniversary;
   const connectionDateText = stats.startDateText;
 
-  // Interactive floating hearts micro-interaction
-  const handleSendHeart = () => {
+  // Interactive floating hearts micro-interaction & Firestore broadcast to partner
+  const handleSendHeart = async () => {
     setHeartCount((prev) => prev + 1);
 
-    if (spawnAreaRef.current) {
-      const floatingHeart = document.createElement("div");
-      const emojis = ["💕", "💖", "❤️", "✨", "🥰", "💌"];
-      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-      const randomX = (Math.random() - 0.5) * 160;
+    const emojis = ["💕", "💖", "❤️", "✨", "🥰", "💌"];
+    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
 
-      floatingHeart.innerHTML = randomEmoji;
-      floatingHeart.className = "absolute text-2xl transition-all pointer-events-none select-none z-50";
-      floatingHeart.style.left = `calc(50% + ${randomX}px)`;
-      floatingHeart.style.top = "-10px";
-      floatingHeart.style.opacity = "1";
-      floatingHeart.style.transform = "translateY(0) scale(0.6)";
-      floatingHeart.style.transition = "all 1000ms cubic-bezier(0.16, 1, 0.3, 1)";
+    // 1. Local animation burst
+    triggerFloatingHearts(randomEmoji, 7);
 
-      spawnAreaRef.current.appendChild(floatingHeart);
-
-      requestAnimationFrame(() => {
-        floatingHeart.style.transform = `translateY(-90px) scale(1.4) rotate(${(Math.random() - 0.5) * 40}deg)`;
-        floatingHeart.style.opacity = "0";
-      });
-
-      setTimeout(() => {
-        floatingHeart.remove();
-      }, 1050);
+    // 2. Broadcast to partner in real-time
+    if (room && currentUser) {
+      try {
+        await sendHeartNudge(room.id, currentUser, randomEmoji);
+        toast.success(`Hati cinta terkirim ke ${partner?.name || "pasangan"}! 💕`, {
+          duration: 2000,
+        });
+      } catch (err) {
+        console.error("Gagal mengirim heart nudge:", err);
+      }
     }
   };
 
@@ -114,25 +111,58 @@ export default function StoryPage() {
 
         <div className="relative z-10 flex flex-col space-y-3">
           {/* Top row: Avatar pairing & live status */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center -space-x-2">
-              <div className="relative w-10 h-10 rounded-full ring-2 ring-white overflow-hidden shadow-xs bg-[#ffdada] flex items-center justify-center font-bold text-[#b80035] text-sm">
-                {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center -space-x-2">
+                <div className="relative w-10 h-10 rounded-full ring-2 ring-white overflow-hidden shadow-xs bg-[#ffdada] flex items-center justify-center font-bold text-[#b80035] text-sm">
+                  {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+
+                {!isSolo && partner ? (
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-full ring-2 ring-white overflow-hidden shadow-xs bg-[#ffddb8] flex items-center justify-center font-bold text-[#855300] text-sm">
+                      {partner.name?.charAt(0).toUpperCase() || "P"}
+                    </div>
+                    {/* Live presence indicator dot on partner avatar */}
+                    <span
+                      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                        partnerOnline
+                          ? "bg-emerald-500 ring-2 ring-emerald-300 animate-pulse"
+                          : "bg-stone-300"
+                      }`}
+                      title={partnerOnline ? "Online" : formatLastSeen(partnerPresence?.lastSeen)}
+                    />
+                  </div>
+                ) : (
+                  <div className="relative w-10 h-10 rounded-full ring-2 ring-white border-2 border-dashed border-[#e5bdbe] bg-[#fff8f5] flex items-center justify-center text-[#5c3f40] text-xs">
+                    <UserPlus className="w-4 h-4 text-[#e11d48]" />
+                  </div>
+                )}
+
+                <div className="w-6 h-6 rounded-full bg-[#e11d48] text-white flex items-center justify-center text-[12px] shadow-xs ml-1">
+                  <Heart className="w-3.5 h-3.5 fill-white text-white" />
+                </div>
               </div>
 
-              {!isSolo ? (
-                <div className="relative w-10 h-10 rounded-full ring-2 ring-white overflow-hidden shadow-xs bg-[#ffddb8] flex items-center justify-center font-bold text-[#855300] text-sm">
-                  {partner?.name?.charAt(0).toUpperCase() || "P"}
-                </div>
-              ) : (
-                <div className="relative w-10 h-10 rounded-full ring-2 ring-white border-2 border-dashed border-[#e5bdbe] bg-[#fff8f5] flex items-center justify-center text-[#5c3f40] text-xs">
-                  <UserPlus className="w-4 h-4 text-[#e11d48]" />
+              {!isSolo && partner && (
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-[#1e1b19] leading-tight">
+                    {partner.name}
+                  </span>
+                  <span
+                    className={`text-[10px] font-semibold flex items-center gap-1 ${
+                      partnerOnline ? "text-emerald-600" : "text-[#5c3f40]/70"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        partnerOnline ? "bg-emerald-500 animate-pulse" : "bg-stone-400"
+                      }`}
+                    />
+                    <span>{partnerOnline ? "Online sekarang 💕" : formatLastSeen(partnerPresence?.lastSeen)}</span>
+                  </span>
                 </div>
               )}
-
-              <div className="w-6 h-6 rounded-full bg-[#e11d48] text-white flex items-center justify-center text-[12px] shadow-xs ml-1">
-                <Heart className="w-3.5 h-3.5 fill-white text-white" />
-              </div>
             </div>
 
             {/* Anniversary / Connection Status Tag */}
@@ -147,7 +177,7 @@ export default function StoryPage() {
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ffddb8]/50 text-[#653e00]">
                 <Cake className="w-3.5 h-3.5 text-[#855300]" />
                 <span className="text-[11px] font-bold">
-                  {daysUntilNextAnniversary} hari lagi Anniversary
+                  {daysUntilNextAnniversary} hari lagi
                 </span>
               </div>
             ) : (

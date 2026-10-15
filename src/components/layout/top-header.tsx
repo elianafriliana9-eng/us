@@ -3,19 +3,23 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useRoomStore } from "@/stores/roomStore";
+import { isUserOnline, formatLastSeen } from "@/lib/services/presenceService";
 import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { calculateRelationshipStats } from "@/lib/utils";
 
 export function TopHeader() {
   const pathname = usePathname();
-  const { room, currentUser } = useRoomStore();
+  const { room, currentUser, presenceMap } = useRoomStore();
   const [copied, setCopied] = useState(false);
 
   if (!room) return null;
 
   const partner = room.members.find((m) => m.id !== currentUser?.id);
   const isSolo = room.members.length < 2;
+
+  const partnerPresence = partner ? presenceMap[partner.id] : undefined;
+  const partnerOnline = isUserOnline(partnerPresence);
 
   let pageTitle = "Our Story";
   if (pathname.startsWith("/wishlist")) pageTitle = "Shared Wishlist";
@@ -86,13 +90,36 @@ export function TopHeader() {
           <button
             onClick={handleShare}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#faf2ee] shadow-[0_1px_4px_rgba(68,64,60,0.04)] active:scale-95 transition-transform"
-            title="Bagikan undangan ke pasangan"
+            title={
+              !isSolo && partner
+                ? `${partner.name}: ${partnerOnline ? "Sedang Online 💕" : formatLastSeen(partnerPresence?.lastSeen)}`
+                : "Bagikan undangan ke pasangan"
+            }
           >
-            <span className={`w-2 h-2 rounded-full ${isSolo ? "bg-amber-400" : "bg-[#00845a]"} animate-pulse`} />
-            <span className="text-[11px] text-[#1e1b19] font-semibold truncate max-w-[130px]">
-              {isSolo && !stats.hasCustomDate
-                ? "Menunggu Pasangan"
-                : `${currentUser?.name} & ${partner?.name || "Pasangan"} 💕 Day ${daysTogether}`}
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                isSolo
+                  ? "bg-amber-400 animate-pulse"
+                  : partnerOnline
+                  ? "bg-emerald-500 ring-2 ring-emerald-300 animate-pulse"
+                  : "bg-stone-300"
+              }`}
+            />
+            <span className="text-[11px] text-[#1e1b19] font-semibold truncate max-w-[135px]">
+              {isSolo && !stats.hasCustomDate ? (
+                "Menunggu Pasangan"
+              ) : (
+                <>
+                  <span>{partner?.name || "Pasangan"}</span>
+                  <span
+                    className={`ml-1 text-[10px] font-bold ${
+                      partnerOnline ? "text-emerald-600" : "text-[#5c3f40]/70"
+                    }`}
+                  >
+                    {partnerOnline ? "• Online" : "• Offline"}
+                  </span>
+                </>
+              )}
             </span>
           </button>
 

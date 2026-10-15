@@ -103,11 +103,38 @@ function createPinIcon(pin: MemoryPin, isSelected: boolean = false) {
   });
 }
 
+function createUserMarkerIcon(name: string) {
+  const initial = (name || "U").trim().charAt(0).toUpperCase();
+
+  const html = `
+    <div class="relative flex flex-col items-center justify-center cursor-pointer select-none">
+      <div class="absolute w-12 h-12 rounded-full bg-rose-500/35 animate-ping pointer-events-none -translate-y-1"></div>
+      <div class="relative flex flex-col items-center">
+        <div class="px-2 py-0.5 rounded-full bg-[#1e1b19] text-white text-[10px] font-bold shadow-md whitespace-nowrap mb-1 flex items-center gap-1 border border-white/40">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Kamu 💕</span>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#b80035] to-[#f43f5e] text-white border-2 border-white shadow-lg flex items-center justify-center text-xs font-black">
+          ${initial}
+        </div>
+      </div>
+    </div>
+  `;
+
+  return L.divIcon({
+    className: "custom-user-marker",
+    html,
+    iconSize: [48, 54],
+    iconAnchor: [24, 38],
+  });
+}
+
 export default function MemoryMapView() {
   const { room, currentUser } = useRoomStore();
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const userLocationLayerRef = useRef<L.LayerGroup | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const tempMarkerRef = useRef<L.Marker | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -381,8 +408,22 @@ export default function MemoryMapView() {
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
     );
 
+    // Watch user's live position locally
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (isCancelled) return;
+        const { latitude, longitude } = pos.coords;
+        const lat = Number(latitude.toFixed(6));
+        const lng = Number(longitude.toFixed(6));
+        setUserCoords({ lat, lng });
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 30000 }
+    );
+
     return () => {
       isCancelled = true;
+      navigator.geolocation.clearWatch(watchId);
     };
   }, []);
 
@@ -411,6 +452,9 @@ export default function MemoryMapView() {
         position: "topright",
       })
       .addTo(map);
+
+    const userLocationLayer = L.layerGroup().addTo(map);
+    userLocationLayerRef.current = userLocationLayer;
 
     const markersLayer = L.layerGroup().addTo(map);
     markersLayerRef.current = markersLayer;
@@ -475,9 +519,40 @@ export default function MemoryMapView() {
     return () => {
       map.remove();
       mapInstanceRef.current = null;
+      userLocationLayerRef.current = null;
       markersLayerRef.current = null;
     };
   }, [handleOpenAddModal]);
+
+  // Render User GPS Location Marker
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const userLayer = userLocationLayerRef.current;
+    if (!map || !userLayer) return;
+
+    userLayer.clearLayers();
+
+    if (userCoords) {
+      const userIcon = createUserMarkerIcon(currentUser?.name || "Kamu");
+      const userMarker = L.marker([userCoords.lat, userCoords.lng], {
+        icon: userIcon,
+        zIndexOffset: 1000,
+      });
+
+      userMarker.bindTooltip("Lokasi Kamu Saat Ini 📍", {
+        direction: "top",
+        offset: [0, -38],
+        className: "heart-pin-tooltip",
+      });
+
+      userMarker.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        map.panTo([userCoords.lat, userCoords.lng], { animate: true, duration: 0.5 });
+      });
+
+      userLayer.addLayer(userMarker);
+    }
+  }, [userCoords, currentUser]);
 
   // Render Pins whenever pins or filter changes
   useEffect(() => {
@@ -626,6 +701,28 @@ export default function MemoryMapView() {
             <span>Tambah Pin</span>
           </button>
         </div>
+
+        {/* User GPS Active Status Pill */}
+        {userCoords && (
+          <div className="flex items-center justify-between px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-xs border border-[#e5bdbe]/60 pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-[10px] font-medium text-[#5c3f40] truncate">
+                Lokasi GPS kamu aktif di peta 📍
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                if (mapInstanceRef.current && userCoords) {
+                  mapInstanceRef.current.flyTo([userCoords.lat, userCoords.lng], 16, { duration: 1 });
+                }
+              }}
+              className="ml-2 text-[10px] font-bold text-[#b80035] hover:underline shrink-0"
+            >
+              Ke Lokasiku
+            </button>
+          </div>
+        )}
 
         {/* Search Bar Input & Autocomplete Dropdown */}
         <div ref={searchContainerRef} className="relative pointer-events-auto">

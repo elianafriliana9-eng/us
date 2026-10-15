@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useRoomStore } from "@/stores/roomStore";
 import { subscribeToRoom } from "@/lib/services/roomService";
+import {
+  updatePresence,
+  subscribeToRoomPresence,
+} from "@/lib/services/presenceService";
+import { subscribeToHeartNudge } from "@/lib/services/nudgeService";
+import { triggerFloatingHearts } from "@/lib/utils";
 import { TopHeader } from "@/components/layout/top-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { toast } from "sonner";
@@ -14,7 +20,8 @@ export default function TabsLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { room, isHydrated, setRoom } = useRoomStore();
+  const { room, isHydrated, setRoom, setPresenceMap } = useRoomStore();
+  const mountTimeRef = useRef(Date.now());
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -27,9 +34,10 @@ export default function TabsLayout({
 
     const roomId = state.room.id;
     const currentUserId = state.currentUser.id;
+    const currentUserName = state.currentUser.name;
 
-    // Subscribe to real-time room updates
-    const unsubscribe = subscribeToRoom(roomId, (updatedRoom) => {
+    // 1. Subscribe to real-time room updates
+    const unsubscribeRoom = subscribeToRoom(roomId, (updatedRoom) => {
       const currentRoom = useRoomStore.getState().room;
       const previousMemberCount = currentRoom?.members.length || 0;
       const newMemberCount = updatedRoom.members.length;
@@ -42,8 +50,54 @@ export default function TabsLayout({
       setRoom(updatedRoom);
     });
 
-    return () => unsubscribe();
-  }, [isHydrated, router, setRoom]);
+    // 2. Presence tracking: Online / Offline heartbeat
+    const markOnline = () => updatePresence(roomId, currentUserId, currentUserName, true);
+    const markOffline = () => updatePresence(roomId, currentUserId, currentUserName, false);
+
+    markOnline();
+    const heartbeatTimer = setInterval(markOnline, 35000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        markOffline();
+      } else {
+        markOnline();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      markOffline();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // 3. Subscribe to room members' presence
+    const unsubscribePresence = subscribeToRoomPresence(roomId, (presenceMap) => {
+      setPresenceMap(presenceMap);
+    });
+
+    // 4. Subscribe to real-time heart nudges from partner
+    const unsubscribeNudge = subscribeToHeartNudge(roomId, (nudge) => {
+      if (nudge && nudge.senderId !== currentUserId && nudge.sentAt > mountTimeRef.current) {
+        triggerFloatingHearts(nudge.emoji || "💕", 10);
+        toast("❤️ Kiriman Cinta!", {
+          description: `${nudge.senderName} baru saja mengirimkan cinta untukmu! ${nudge.emoji}`,
+          duration: 4000,
+        });
+      }
+    });
+
+    return () => {
+      clearInterval(heartbeatTimer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      markOffline();
+      unsubscribeRoom();
+      unsubscribePresence();
+      unsubscribeNudge();
+    };
+  }, [isHydrated, router, setRoom, setPresenceMap]);
 
   if (!isHydrated) {
     return (

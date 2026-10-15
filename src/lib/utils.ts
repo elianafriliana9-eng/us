@@ -120,3 +120,34 @@ export function formatTargetDateRange(startDate?: string, endDate?: string): str
 
   return `${sDay} ${sMonthName} ${sYear} - ${eDay} ${eMonthName} ${eYear}`;
 }
+
+export function triggerFloatingHearts(emoji: string = "💕", count: number = 7) {
+  if (typeof window === "undefined" || !document?.body) return;
+  const emojis = [emoji, "💖", "❤️", "✨", "🥰", "💌"];
+
+  for (let i = 0; i < count; i++) {
+    const heart = document.createElement("div");
+    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+    const randomX = Math.random() * 80 + 10; // 10% to 90% of screen width
+    const randomDelay = Math.random() * 350;
+
+    heart.innerHTML = randomEmoji;
+    heart.className = "fixed text-3xl pointer-events-none select-none z-[9999]";
+    heart.style.left = `${randomX}%`;
+    heart.style.bottom = "90px";
+    heart.style.opacity = "0";
+    heart.style.transform = "scale(0.5) translateY(0)";
+    heart.style.transition = "transform 1400ms cubic-bezier(0.16, 1, 0.3, 1), opacity 1400ms ease-out";
+
+    document.body.appendChild(heart);
+
+    setTimeout(() => {
+      heart.style.opacity = "1";
+      heart.style.transform = `scale(${1 + Math.random() * 0.6}) translateY(-${180 + Math.random() * 220}px) rotate(${(Math.random() - 0.5) * 60}deg)`;
+      setTimeout(() => {
+        heart.style.opacity = "0";
+        setTimeout(() => heart.remove(), 400);
+      }, 1000);
+    }, randomDelay);
+  }
+}
