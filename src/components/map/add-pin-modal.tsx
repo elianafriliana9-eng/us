@@ -266,7 +266,7 @@ function AddPinForm({
       </div>
 
       {/* Action Buttons */}
-      <div className="pt-2 flex items-center gap-2">
+      <div className="pt-2 pb-6 sm:pb-2 flex items-center gap-2">
         <button
           type="button"
           onClick={onClose}
@@ -300,8 +300,8 @@ export function AddPinModal({
   const key = `${lat}-${lng}-${initialLocationName || ""}`;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="w-full max-w-md rounded-3xl bg-white p-5 pb-6 shadow-2xl max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between pb-3 border-b border-[#eee7e3]">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-[#ffdada] text-[#b80035] flex items-center justify-center">

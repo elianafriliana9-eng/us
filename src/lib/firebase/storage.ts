@@ -7,15 +7,15 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
  */
 export async function fileToOptimizedDataUrl(
   file: File | Blob,
-  maxWidth = 960,
-  quality = 0.75
+  maxWidth = 800,
+  quality = 0.7
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     // If it's an audio blob, convert directly to base64 data URL
     if (file.type && file.type.startsWith("audio/")) {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
+      reader.onerror = () => reject(new Error("Gagal membaca rekaman audio"));
       reader.readAsDataURL(file);
       return;
     }
@@ -44,12 +44,27 @@ export async function fileToOptimizedDataUrl(
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+        let result = canvas.toDataURL("image/jpeg", quality);
+
+        // Safeguard: if result is still > 500KB, re-encode with quality 0.5
+        if (result.length > 500000) {
+          result = canvas.toDataURL("image/jpeg", 0.5);
+        }
+
+        resolve(result);
       };
-      img.onerror = () => resolve(reader.result as string);
+      img.onerror = () => {
+        // If canvas image load fails and raw file is reasonably sized, return raw base64
+        const raw = reader.result as string;
+        if (raw && raw.length < 700000) {
+          resolve(raw);
+        } else {
+          reject(new Error("Format foto tidak didukung atau ukuran terlalu besar"));
+        }
+      };
       img.src = e.target?.result as string;
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error("Gagal membaca file foto"));
     reader.readAsDataURL(file);
   });
 }

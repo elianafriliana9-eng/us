@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import L from "leaflet";
 import { MemoryPin, PinCategory } from "@/types/pin";
 import { useRoomStore } from "@/stores/roomStore";
@@ -195,10 +195,49 @@ export default function MemoryMapView() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [discoveredPlaceName, setDiscoveredPlaceName] = useState<string>("");
 
+  const filterBarRef = useRef<HTMLDivElement>(null);
+  const prevCategoryRef = useRef<string>("all");
+
+  const normalizeCat = useCallback((c?: string) => {
+    return (c || "daily").toLowerCase().trim().replace(/[\s-]/g, "_");
+  }, []);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: pins.length };
+    pins.forEach((pin) => {
+      const cat = normalizeCat(pin.category);
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [pins, normalizeCat]);
+
+  const handleSelectCategory = (catKey: string) => {
+    setSelectedCategory(catKey);
+    if (selectedPin && catKey !== "all") {
+      if (normalizeCat(selectedPin.category) !== normalizeCat(catKey)) {
+        setSelectedPin(null);
+      }
+    }
+  };
+
   const selectedPinRef = useRef<MemoryPin | null>(null);
   useEffect(() => {
     selectedPinRef.current = selectedPin;
   }, [selectedPin]);
+
+  // Prevent Leaflet from hijacking click/touch/scroll on floating controls
+  useEffect(() => {
+    const filterEl = filterBarRef.current;
+    if (filterEl && typeof L !== "undefined") {
+      L.DomEvent.disableClickPropagation(filterEl);
+      L.DomEvent.disableScrollPropagation(filterEl);
+    }
+    const searchEl = searchContainerRef.current;
+    if (searchEl && typeof L !== "undefined") {
+      L.DomEvent.disableClickPropagation(searchEl);
+      L.DomEvent.disableScrollPropagation(searchEl);
+    }
+  }, []);
 
   // Close search dropdown on click outside
   useEffect(() => {
@@ -633,9 +672,22 @@ export default function MemoryMapView() {
     const filteredPins =
       selectedCategory === "all"
         ? pins
-        : pins.filter((p) => p.category === selectedCategory);
+        : pins.filter(
+            (p) => normalizeCat(p.category) === normalizeCat(selectedCategory)
+          );
 
-    if (filteredPins.length === 0) return;
+    const isCategoryChange = prevCategoryRef.current !== selectedCategory;
+    prevCategoryRef.current = selectedCategory;
+
+    if (filteredPins.length === 0) {
+      if (isCategoryChange && selectedCategory !== "all") {
+        const catMeta = CATEGORY_MAP[selectedCategory as PinCategory];
+        toast.info(
+          `Belum ada kenangan di kategori ${catMeta?.label || selectedCategory} ✨`
+        );
+      }
+      return;
+    }
 
     const latLngs: L.LatLngExpression[] = [];
 
@@ -667,12 +719,25 @@ export default function MemoryMapView() {
       latLngs.push([pin.lat, pin.lng]);
     });
 
-    // If first load with pins and no couple fitted yet, fit bounds
-    if (latLngs.length > 0 && !selectedPin && !initialCenteredRef.current && !initialCoupleFittedRef.current) {
+    // Auto fit/pan camera when category filter is selected by user
+    if (isCategoryChange && latLngs.length > 0) {
+      if (latLngs.length === 1) {
+        map.flyTo(latLngs[0] as L.LatLngExpression, 15, { duration: 0.8 });
+      } else {
+        const bounds = L.latLngBounds(latLngs);
+        map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15 });
+      }
+    } else if (
+      latLngs.length > 0 &&
+      !selectedPin &&
+      !initialCenteredRef.current &&
+      !initialCoupleFittedRef.current
+    ) {
+      // If first load with pins and no couple fitted yet, fit bounds
       const bounds = L.latLngBounds(latLngs);
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
     }
-  }, [pins, selectedCategory, selectedPin]);
+  }, [pins, selectedCategory, selectedPin, normalizeCat]);
 
   // Locate User GPS manually
   const handleLocateMe = () => {
@@ -751,10 +816,10 @@ export default function MemoryMapView() {
   return (
     <div className="relative w-full h-[calc(100vh-140px)] min-h-[500px] rounded-3xl overflow-hidden shadow-[0_10px_25px_-5px_rgba(68,64,60,0.08)] border border-[#e5bdbe]/60 bg-[#faf2ee]">
       {/* OpenStreetMap Container */}
-      <div ref={mapContainerRef} className="w-full h-full z-0" />
+      <div ref={mapContainerRef} className="relative w-full h-full z-0" />
 
       {/* Top Floating Bar: Category Filter Chips, Count & Search */}
-      <div className="absolute top-3 inset-x-3 z-20 flex flex-col gap-2 pointer-events-none">
+      <div className="absolute top-3 inset-x-3 z-[1000] flex flex-col gap-2 pointer-events-none">
         {/* Top Summary Header */}
         <div className="flex items-center justify-between pointer-events-auto gap-2">
           <div className="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-[#e5bdbe]/60 flex items-center gap-1.5 shrink-0">
@@ -969,36 +1034,67 @@ export default function MemoryMapView() {
         </div>
 
         {/* Scrollable Category Filter */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pointer-events-auto scrollbar-none">
+        <div
+          ref={filterBarRef}
+          className="flex items-center gap-1.5 overflow-x-auto pb-1 pointer-events-auto scrollbar-none touch-pan-x select-none"
+        >
           <button
-            onClick={() => setSelectedCategory("all")}
-            className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap shadow-xs backdrop-blur-md transition-all ${
+            type="button"
+            onClick={() => handleSelectCategory("all")}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-xs backdrop-blur-md transition-all cursor-pointer active:scale-95 touch-manipulation flex items-center gap-1.5 ${
               selectedCategory === "all"
-                ? "bg-[#1e1b19] text-white"
-                : "bg-white/85 text-[#5c3f40] border border-[#e5bdbe]/50 hover:bg-white"
+                ? "bg-[#1e1b19] text-white shadow-md ring-2 ring-black/20"
+                : "bg-white/90 text-[#5c3f40] border border-[#e5bdbe]/60 hover:bg-white"
             }`}
           >
-            Semua ✨
+            <span>Semua ✨</span>
+            {pins.length > 0 && (
+              <span
+                className={`text-[9px] px-1.5 py-0.2 rounded-full font-semibold ${
+                  selectedCategory === "all"
+                    ? "bg-white/20 text-white"
+                    : "bg-[#ffdada] text-[#b80035]"
+                }`}
+              >
+                {pins.length}
+              </span>
+            )}
           </button>
-          {Object.entries(CATEGORY_MAP).map(([key, item]) => (
-            <button
-              key={key}
-              onClick={() => setSelectedCategory(key)}
-              className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap shadow-xs backdrop-blur-md transition-all flex items-center gap-1 ${
-                selectedCategory === key
-                  ? "bg-[#1e1b19] text-white"
-                  : "bg-white/85 text-[#5c3f40] border border-[#e5bdbe]/50 hover:bg-white"
-              }`}
-            >
-              <span>{item.emoji}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
+          {Object.entries(CATEGORY_MAP).map(([key, item]) => {
+            const count = categoryCounts[key] || 0;
+            const isSelected = selectedCategory === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleSelectCategory(key)}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-xs backdrop-blur-md transition-all cursor-pointer active:scale-95 touch-manipulation flex items-center gap-1.5 ${
+                  isSelected
+                    ? "bg-[#1e1b19] text-white shadow-md ring-2 ring-black/20"
+                    : "bg-white/90 text-[#5c3f40] border border-[#e5bdbe]/60 hover:bg-white"
+                }`}
+              >
+                <span>{item.emoji}</span>
+                <span>{item.label}</span>
+                {count > 0 && (
+                  <span
+                    className={`text-[9px] px-1.5 py-0.2 rounded-full font-semibold ${
+                      isSelected
+                        ? "bg-white/20 text-white"
+                        : "bg-[#ffdada] text-[#b80035]"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Floating Action Button: Current Location */}
-      <div className="absolute right-3 bottom-6 z-20 flex flex-col gap-2">
+      <div className="absolute right-3 bottom-6 z-[1000] flex flex-col gap-2">
         <button
           onClick={handleLocateMe}
           disabled={isLocating}
@@ -1011,7 +1107,7 @@ export default function MemoryMapView() {
 
       {/* Tap Hint Banner (if no pin selected & user tapped on map or searched place) */}
       {clickedCoords && !selectedPin && (
-        <div className="absolute bottom-6 inset-x-4 z-20 flex justify-center pointer-events-none">
+        <div className="absolute bottom-6 inset-x-4 z-[1000] flex justify-center pointer-events-none">
           <div className="pointer-events-auto max-w-sm w-full bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-[#e5bdbe] flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-8 h-8 rounded-full bg-[#ffdada] text-[#b80035] flex items-center justify-center shrink-0">
@@ -1053,7 +1149,7 @@ export default function MemoryMapView() {
 
       {/* Selected Pin Details Bottom Sheet / Summary Card */}
       {selectedPin && (
-        <div className="absolute bottom-4 inset-x-3 z-30 flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-none">
+        <div className="absolute bottom-4 inset-x-3 z-[1001] flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-none">
           <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl p-4 shadow-2xl border border-[#e5bdbe] overflow-hidden pointer-events-auto">
             {/* Top Handle Pill */}
             <div className="w-8 h-1 bg-[#e5bdbe]/80 rounded-full mx-auto mb-2.5" />
@@ -1181,7 +1277,7 @@ export default function MemoryMapView() {
       {/* Full Photo Modal Lightbox */}
       {previewPhoto && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setPreviewPhoto(null)}
         >
           <div

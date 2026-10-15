@@ -194,8 +194,8 @@ export function VoiceNoteModal({ isOpen, onClose }: VoiceNoteModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="w-full max-w-sm bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-rose-100 overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-rose-100 overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 max-h-[88vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#eee7e3] bg-[#faf2ee]">
           <div className="flex items-center gap-2">
@@ -216,7 +216,7 @@ export function VoiceNoteModal({ isOpen, onClose }: VoiceNoteModalProps) {
         </div>
 
         {/* Body */}
-        <div className="p-6 flex flex-col items-center space-y-5">
+        <div className="p-6 pb-8 sm:pb-6 flex flex-col items-center space-y-5">
           {!audioUrl ? (
             /* Recording Mode */
             <div className="flex flex-col items-center space-y-4 py-2 w-full">

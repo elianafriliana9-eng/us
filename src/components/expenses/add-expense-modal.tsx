@@ -119,8 +119,8 @@ export function AddExpenseModal({ isOpen, onClose }: AddExpenseModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-rose-100/60 overflow-hidden flex flex-col max-h-[92vh] animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-rose-100/60 overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#eee7e3] bg-[#faf2ee]/70">
           <div>
@@ -335,7 +335,7 @@ export function AddExpenseModal({ isOpen, onClose }: AddExpenseModalProps) {
           </div>
 
           {/* Submit Button */}
-          <div className="pt-2">
+          <div className="pt-2 pb-6 sm:pb-2">
             <button
               type="submit"
               disabled={isSubmitting}

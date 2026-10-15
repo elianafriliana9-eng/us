@@ -85,14 +85,16 @@ export function AddWishlistModal({ isOpen, onClose }: AddWishlistModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
-      <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-3 border-b border-[#eee7e3]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between p-5 pb-3 border-b border-[#eee7e3] shrink-0">
           <div className="flex items-center gap-2">
             <Gift className="w-5 h-5 text-[#e11d48]" />
             <h3 className="font-bold text-[17px] text-[#1e1b19]">Tambah Wishlist Baru</h3>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-full text-[#5c3f40] hover:bg-[#faf2ee]"
           >
@@ -100,7 +102,7 @@ export function AddWishlistModal({ isOpen, onClose }: AddWishlistModalProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
+        <form id="add-wishlist-form" onSubmit={handleSubmit} className="p-5 overflow-y-auto flex-1 space-y-3.5 scrollbar-thin">
           {/* Photo Preview & Upload */}
           <div>
             <label className="text-xs font-semibold text-[#1e1b19] block mb-1">
@@ -242,24 +244,26 @@ export function AddWishlistModal({ isOpen, onClose }: AddWishlistModalProps) {
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="pt-2 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 h-11 rounded-full border border-[#e5bdbe] text-xs font-semibold text-[#5c3f40] hover:bg-[#faf2ee]"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 h-11 rounded-full bg-[#e11d48] text-white text-xs font-semibold shadow-md shadow-rose-500/25 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {loading ? "Menyimpan..." : "Simpan Wishlist 🎁"}
-            </button>
-          </div>
         </form>
+
+        {/* Action Buttons Pinned at Bottom */}
+        <div className="p-4 pt-3 pb-8 sm:pb-4 border-t border-[#eee7e3] bg-white flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 h-11 rounded-full border border-[#e5bdbe] text-xs font-semibold text-[#5c3f40] hover:bg-[#faf2ee] active:scale-95 transition-all"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            form="add-wishlist-form"
+            disabled={loading}
+            className="flex-1 h-11 rounded-full bg-[#e11d48] text-white text-xs font-semibold shadow-md shadow-rose-500/25 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {loading ? "Menyimpan..." : "Simpan Wishlist 🎁"}
+          </button>
+        </div>
       </div>
     </div>
   );
