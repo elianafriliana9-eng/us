@@ -300,7 +300,7 @@ export function AddPinModal({
   const key = `${lat}-${lng}-${initialLocationName || ""}`;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="w-full max-w-md rounded-3xl bg-white p-5 pb-6 shadow-2xl max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between pb-3 border-b border-[#eee7e3]">
           <div className="flex items-center gap-2">

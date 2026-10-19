@@ -25,6 +25,7 @@ export function TopHeader() {
   if (pathname.startsWith("/wishlist")) pageTitle = "Shared Wishlist";
   else if (pathname.startsWith("/expenses")) pageTitle = "Our Expenses";
   else if (pathname.startsWith("/map")) pageTitle = "Memory Map";
+  else if (pathname.startsWith("/gallery")) pageTitle = "Our Gallery";
   else if (pathname.startsWith("/more")) pageTitle = "Room & Settings";
 
   // Calculate days together using custom start date or connected timestamp

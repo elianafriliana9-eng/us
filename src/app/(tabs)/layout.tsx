@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useRoomStore } from "@/stores/roomStore";
 import { subscribeToRoom } from "@/lib/services/roomService";
@@ -8,7 +8,10 @@ import {
   updatePresence,
   subscribeToRoomPresence,
 } from "@/lib/services/presenceService";
-import { subscribeToHeartNudge } from "@/lib/services/nudgeService";
+import {
+  subscribeToHeartNudge,
+  nudgeSentAtMs,
+} from "@/lib/services/nudgeService";
 import { triggerFloatingHearts } from "@/lib/utils";
 import { TopHeader } from "@/components/layout/top-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -21,7 +24,6 @@ export default function TabsLayout({
 }) {
   const router = useRouter();
   const { room, isHydrated, setRoom, setPresenceMap } = useRoomStore();
-  const mountTimeRef = useRef(Date.now());
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -77,21 +79,83 @@ export default function TabsLayout({
       setPresenceMap(presenceMap);
     });
 
-    // 4. Subscribe to real-time heart nudges from partner
-    const unsubscribeNudge = subscribeToHeartNudge(roomId, (nudge) => {
-      if (nudge && nudge.senderId !== currentUserId && nudge.sentAt > mountTimeRef.current) {
-        triggerFloatingHearts(nudge.emoji || "💕", 10);
-        toast("❤️ Kiriman Cinta!", {
-          description: `${nudge.senderName} baru saja mengirimkan cinta untukmu! ${nudge.emoji}`,
-          duration: 4000,
-        });
+    // 4. Subscribe to heart nudges: realtime while app is open, plus replay of
+    //    unseen hearts (sent while the app was closed) when the app is opened.
+    //    "Seen" marker is persisted in localStorage per room+user.
+    const seenKey = `us:heartNudgeSeen:${roomId}:${currentUserId}`;
+
+    let maxSeenAt: number | null = null;
+    try {
+      const stored = window.localStorage.getItem(seenKey);
+      const parsed = stored ? Number(stored) : NaN;
+      maxSeenAt = Number.isFinite(parsed) ? parsed : null;
+    } catch {
+      // storage unavailable — treat as never seen
+    }
+
+    // Batch nudges arriving in quick succession (partner tapping repeatedly)
+    // into a single burst + toast so the receiver isn't spammed
+    type IncomingNudge = { senderName: string; emoji: string; sentAtMs: number };
+    const pendingNudges: IncomingNudge[] = [];
+    const queuedSentAts = new Set<number>();
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushPendingNudges = () => {
+      flushTimer = null;
+      if (pendingNudges.length === 0) return;
+      const batch = [...pendingNudges];
+      pendingNudges.length = 0;
+      queuedSentAts.clear();
+      const latest = batch[batch.length - 1];
+
+      triggerFloatingHearts(latest.emoji, Math.min(batch.length * 3, 15));
+      toast("❤️ Kiriman Cinta!", {
+        description:
+          batch.length === 1
+            ? `${latest.senderName} mengirimkan cinta untukmu! ${latest.emoji}`
+            : `${latest.senderName} mengirim ${batch.length} hati untukmu! ${latest.emoji}`,
+        duration: 4000,
+      });
+
+      if (maxSeenAt === null || latest.sentAtMs > maxSeenAt) {
+        maxSeenAt = latest.sentAtMs;
+        try {
+          window.localStorage.setItem(seenKey, String(maxSeenAt));
+        } catch {
+          // storage unavailable — hearts may replay next open, harmless
+        }
       }
+    };
+
+    const queueNudge = (nudge: IncomingNudge) => {
+      if (queuedSentAts.has(nudge.sentAtMs)) return;
+      queuedSentAts.add(nudge.sentAtMs);
+      pendingNudges.push(nudge);
+      if (!flushTimer) {
+        flushTimer = setTimeout(flushPendingNudges, 600);
+      }
+    };
+
+    const unsubscribeNudge = subscribeToHeartNudge(roomId, (nudges) => {
+      if (!nudges || nudges.length === 0) return;
+      nudges.forEach((nudge) => {
+        if (nudge.senderId === currentUserId) return;
+        const sentAtMs = nudgeSentAtMs(nudge);
+        if (sentAtMs === null) return; // latency-compensated echo, not yet confirmed
+        if (maxSeenAt !== null && sentAtMs <= maxSeenAt) return; // already seen
+        queueNudge({
+          senderName: nudge.senderName,
+          emoji: nudge.emoji || "💕",
+          sentAtMs,
+        });
+      });
     });
 
     return () => {
       clearInterval(heartbeatTimer);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (flushTimer) clearTimeout(flushTimer);
       markOffline();
       unsubscribeRoom();
       unsubscribePresence();

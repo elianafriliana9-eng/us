@@ -76,7 +76,7 @@ export async function fileToOptimizedDataUrl(
  */
 export async function uploadRoomMedia(
   _roomId: string,
-  _folder: "posts" | "pins" | "avatars" | "voice_notes",
+  _folder: "posts" | "pins" | "avatars" | "voice_notes" | "gallery",
   file: File | Blob,
   _customExtension?: string
 ): Promise<string> {

@@ -446,10 +446,11 @@ export default function MemoryMapView() {
       maxZoom: 19,
     }).addTo(map);
 
-    // Zoom control in top-right
+    // Zoom control in bottom-left (keeps top free for floating controls,
+    // right side free for locate FAB & attribution)
     L.control
       .zoom({
-        position: "topright",
+        position: "bottomleft",
       })
       .addTo(map);
 
@@ -678,12 +679,12 @@ export default function MemoryMapView() {
   };
 
   return (
-    <div className="relative w-full h-[calc(100vh-140px)] min-h-[500px] rounded-3xl overflow-hidden shadow-[0_10px_25px_-5px_rgba(68,64,60,0.08)] border border-[#e5bdbe]/60 bg-[#faf2ee]">
+    <div className="relative w-full h-[calc(100dvh-176px)] min-h-[420px] max-h-[640px] rounded-3xl overflow-hidden shadow-[0_10px_25px_-5px_rgba(68,64,60,0.08)] border border-[#e5bdbe]/60 bg-[#faf2ee]">
       {/* OpenStreetMap Container */}
       <div ref={mapContainerRef} className="relative w-full h-full z-0" />
 
       {/* Top Floating Bar: Category Filter Chips, Count & Search */}
-      <div className="absolute top-3 inset-x-3 z-[1000] flex flex-col gap-2 pointer-events-none">
+      <div className="absolute top-3 inset-x-3 z-[30] flex flex-col gap-2 pointer-events-none">
         {/* Top Summary Header */}
         <div className="flex items-center justify-between pointer-events-auto gap-2">
           <div className="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-[#e5bdbe]/60 flex items-center gap-1.5 shrink-0">
@@ -923,8 +924,8 @@ export default function MemoryMapView() {
         </div>
       </div>
 
-      {/* Floating Action Button: Current Location */}
-      <div className="absolute right-3 bottom-6 z-[1000] flex flex-col gap-2">
+      {/* Floating Action Button: Current Location (slot above the nav's Room FAB band) */}
+      <div className="absolute right-3 bottom-24 z-[30] flex flex-col gap-2">
         <button
           onClick={handleLocateMe}
           disabled={isLocating}
@@ -937,7 +938,7 @@ export default function MemoryMapView() {
 
       {/* Tap Hint Banner (if no pin selected & user tapped on map or searched place) */}
       {clickedCoords && !selectedPin && (
-        <div className="absolute bottom-6 inset-x-4 z-[1000] flex justify-center pointer-events-none">
+        <div className="absolute bottom-6 inset-x-4 z-[30] flex justify-center pointer-events-none">
           <div className="pointer-events-auto max-w-sm w-full bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-[#e5bdbe] flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-8 h-8 rounded-full bg-[#ffdada] text-[#b80035] flex items-center justify-center shrink-0">
@@ -979,7 +980,7 @@ export default function MemoryMapView() {
 
       {/* Selected Pin Details Bottom Sheet / Summary Card */}
       {selectedPin && (
-        <div className="absolute bottom-4 inset-x-3 z-[1001] flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-none">
+        <div className="absolute bottom-4 inset-x-3 z-[35] flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-none">
           <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl p-4 shadow-2xl border border-[#e5bdbe] overflow-hidden pointer-events-auto">
             {/* Top Handle Pill */}
             <div className="w-8 h-1 bg-[#e5bdbe]/80 rounded-full mx-auto mb-2.5" />
@@ -1107,7 +1108,7 @@ export default function MemoryMapView() {
       {/* Full Photo Modal Lightbox */}
       {previewPhoto && (
         <div
-          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setPreviewPhoto(null)}
         >
           <div

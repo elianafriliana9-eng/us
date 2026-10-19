@@ -11,7 +11,7 @@ const MemoryMapView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[calc(100vh-140px)] min-h-[500px] rounded-3xl bg-[#faf2ee] border border-[#e5bdbe]/60 flex flex-col items-center justify-center p-6 text-center animate-pulse">
+      <div className="w-full h-[calc(100dvh-176px)] min-h-[420px] max-h-[640px] rounded-3xl bg-[#faf2ee] border border-[#e5bdbe]/60 flex flex-col items-center justify-center p-6 text-center animate-pulse">
         <div className="w-12 h-12 rounded-full bg-[#ffdada] text-[#b80035] flex items-center justify-center mb-3">
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
