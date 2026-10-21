@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRoomStore } from "@/stores/roomStore";
 import { updateWishlistProgress, toggleWishlistCompleted, deleteWishlistItem } from "@/lib/services/wishlistService";
 import { WishlistItem } from "@/types/wishlist";
@@ -25,14 +25,6 @@ export function AdjustProgressModal({
   const [startDate, setStartDate] = useState<string>(item?.targetStartDate || "");
   const [endDate, setEndDate] = useState<string>(item?.targetEndDate || "");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (item) {
-      setSavedAmount(item.currentSaved || 0);
-      setStartDate(item.targetStartDate || "");
-      setEndDate(item.targetEndDate || "");
-    }
-  }, [item]);
 
   const formattedDateRange = formatTargetDateRange(startDate, endDate) || (startDate ? "" : item?.targetDate || "");
 

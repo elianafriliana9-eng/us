@@ -281,6 +281,7 @@ export default function WishlistPage() {
       {/* Modals */}
       <AddWishlistModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
       <AdjustProgressModal
+        key={selectedItemForAdjust?.id ?? "none"}
         item={selectedItemForAdjust}
         isOpen={!!selectedItemForAdjust}
         onClose={() => setSelectedItemForAdjust(null)}

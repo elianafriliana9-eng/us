@@ -3,8 +3,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useRoomStore } from "@/stores/roomStore";
 import { subscribeToStoryPosts, likeStoryPost } from "@/lib/services/storyService";
+import { subscribeToMoods } from "@/lib/services/moodService";
 import { AddStoryModal } from "@/components/story/add-story-modal";
+import { MoodCard } from "@/components/mood/mood-card";
 import { Post, PostCategory } from "@/types/post";
+import { MoodEntry } from "@/types/mood";
 import {
   Heart,
   Cake,
@@ -34,6 +37,7 @@ export default function StoryPage() {
   const partnerOnline = isUserOnline(partnerPresence);
 
   const [posts, setPosts] = useState<Post[]>([]);
+  const [moods, setMoods] = useState<MoodEntry[]>([]);
   const [filter, setFilter] = useState<"all" | PostCategory>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
@@ -48,6 +52,17 @@ export default function StoryPage() {
 
     const unsubscribe = subscribeToStoryPosts(room.id, (loadedPosts) => {
       setPosts(loadedPosts);
+    });
+
+    return () => unsubscribe();
+  }, [room?.id]);
+
+  // Subscribe to real-time daily mood check-ins (both partners)
+  useEffect(() => {
+    if (!room?.id) return;
+
+    const unsubscribe = subscribeToMoods(room.id, (loadedMoods) => {
+      setMoods(loadedMoods);
     });
 
     return () => unsubscribe();
@@ -244,6 +259,9 @@ export default function StoryPage() {
           <div ref={spawnAreaRef} className="relative w-full h-0 pointer-events-none overflow-visible" />
         </div>
       </div>
+
+      {/* Daily Mood Check-in Ritual */}
+      <MoodCard moods={moods} />
 
       {/* Memory Filter Chips Bar */}
       <div className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar -mx-4 px-4">

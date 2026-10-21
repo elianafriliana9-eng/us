@@ -35,7 +35,6 @@ export function TopHeader() {
     connectedTimestamp,
     isSolo
   );
-  const daysTogether = stats.diffDays;
 
   const handleCopyCode = async () => {
     try {
