@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -46,6 +47,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-[#fff8f5] text-[#1e1b19]">
         <div className="w-full max-w-md mx-auto min-h-dvh flex flex-col relative bg-[#fff8f5]">
           {children}
+          <PwaInstallBanner />
         </div>
         <Toaster position="top-center" richColors />
       </body>
