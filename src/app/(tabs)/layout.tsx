@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useRoomStore } from "@/stores/roomStore";
 import { subscribeToRoom } from "@/lib/services/roomService";
@@ -12,6 +12,9 @@ import {
   subscribeToHeartNudge,
   nudgeSentAtMs,
 } from "@/lib/services/nudgeService";
+import { subscribeToDateInvites } from "@/lib/services/dateInviteService";
+import { DateInvite } from "@/types/dateInvite";
+import { EnvelopePopup } from "@/components/date-invite/envelope-popup";
 import { triggerFloatingHearts } from "@/lib/utils";
 import { TopHeader } from "@/components/layout/top-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -24,6 +27,8 @@ export default function TabsLayout({
 }) {
   const router = useRouter();
   const { room, isHydrated, setRoom, setPresenceMap } = useRoomStore();
+  const [activeInvite, setActiveInvite] = useState<DateInvite | null>(null);
+  const [dismissedInviteIds, setDismissedInviteIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -151,6 +156,26 @@ export default function TabsLayout({
       });
     });
 
+    // 5. Subscribe to date invitations
+    const unsubscribeInvites = subscribeToDateInvites(roomId, (invites) => {
+      // Find the most recent pending invite addressed to this user (or partner if sent by partner)
+      const pendingForMe = invites.find(
+        (inv) =>
+          inv.status === "pending" &&
+          inv.senderId !== currentUserId
+      );
+
+      if (pendingForMe) {
+        setActiveInvite((prev) => {
+          // If already dismissed in this session, skip
+          if (dismissedInviteIds.has(pendingForMe.id)) return prev;
+          return pendingForMe;
+        });
+      } else {
+        setActiveInvite(null);
+      }
+    });
+
     return () => {
       clearInterval(heartbeatTimer);
       document.removeEventListener("visibilitychange", handleVisibility);
@@ -160,8 +185,9 @@ export default function TabsLayout({
       unsubscribeRoom();
       unsubscribePresence();
       unsubscribeNudge();
+      unsubscribeInvites();
     };
-  }, [isHydrated, router, setRoom, setPresenceMap]);
+  }, [isHydrated, router, setRoom, setPresenceMap, dismissedInviteIds]);
 
   if (!isHydrated) {
     return (
@@ -182,6 +208,18 @@ export default function TabsLayout({
         {children}
       </main>
       <BottomNav />
+
+      {/* Date Invite Envelope Popup when partner sends one */}
+      {activeInvite && (
+        <EnvelopePopup
+          invite={activeInvite}
+          roomId={room.id}
+          onDismiss={() => {
+            setDismissedInviteIds((prev) => new Set(prev).add(activeInvite.id));
+            setActiveInvite(null);
+          }}
+        />
+      )}
     </div>
   );
 }

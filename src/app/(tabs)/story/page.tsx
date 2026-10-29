@@ -19,6 +19,7 @@ import {
   UserPlus,
   CalendarHeart,
   Sparkles,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import { calculateRelationshipStats, triggerFloatingHearts } from "@/lib/utils";
@@ -27,6 +28,7 @@ import { sendHeartNudge } from "@/lib/services/nudgeService";
 import { EditDateModal } from "@/components/story/edit-date-modal";
 import { VoiceNoteModal } from "@/components/story/voice-note-modal";
 import { AudioPlayer } from "@/components/story/audio-player";
+import { CreateInviteModal } from "@/components/date-invite/create-invite-modal";
 
 export default function StoryPage() {
   const { room, currentUser, presenceMap } = useRoomStore();
@@ -42,6 +44,7 @@ export default function StoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [heartCount, setHeartCount] = useState(0);
 
   const spawnAreaRef = useRef<HTMLDivElement>(null);
@@ -234,7 +237,7 @@ export default function StoryPage() {
             </div>
           </div>
 
-          {/* Quick Intimacy Action: Send a Heart Nudge */}
+          {/* Quick Intimacy Action: Send a Heart Nudge & Date Invite */}
           <div className="pt-2 flex items-center gap-2">
             <button
               onClick={handleSendHeart}
@@ -245,6 +248,14 @@ export default function StoryPage() {
               <span className="px-2 py-0.5 rounded-full bg-white text-[#b80035] text-[11px] shadow-xs font-bold">
                 {heartCount > 0 ? `Terkirim ${heartCount}!` : "Tap! 💕"}
               </span>
+            </button>
+            <button
+              onClick={() => setIsInviteModalOpen(true)}
+              className="h-11 px-3.5 rounded-full bg-[#faf2ee] hover:bg-[#ffdada] text-[#5c3f40] hover:text-[#b80035] flex items-center justify-center gap-1.5 active:scale-90 transition-all shadow-xs cursor-pointer border border-[#e5bdbe]/40 text-xs font-bold"
+              title="Ajak kencan dengan surat cinta"
+            >
+              <Mail className="w-4 h-4 text-[#e11d48]" />
+              <span>Ajak Ngedate</span>
             </button>
             <button
               onClick={() => setIsVoiceModalOpen(true)}
@@ -448,6 +459,12 @@ export default function StoryPage() {
       <VoiceNoteModal
         isOpen={isVoiceModalOpen}
         onClose={() => setIsVoiceModalOpen(false)}
+      />
+
+      {/* Date Invite Modal */}
+      <CreateInviteModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
       />
     </div>
   );

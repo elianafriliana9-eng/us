@@ -2,15 +2,26 @@
 
 import { useRoomStore } from "@/stores/roomStore";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Home, Users, Check, Copy, Lock, LogOut, UserMinus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Home, Users, Check, Copy, Lock, LogOut, UserMinus, Mail, Calendar, Clock, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { resetPartnerSlot } from "@/lib/services/roomService";
+import { subscribeToDateInvites } from "@/lib/services/dateInviteService";
+import { DateInvite } from "@/types/dateInvite";
+import { CreateInviteModal } from "@/components/date-invite/create-invite-modal";
 
 export default function MorePage() {
   const router = useRouter();
   const { room, currentUser, leaveRoom } = useRoomStore();
   const [copied, setCopied] = useState(false);
+  const [invites, setInvites] = useState<DateInvite[]>([]);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!room?.id) return;
+    const unsub = subscribeToDateInvites(room.id, setInvites);
+    return () => unsub();
+  }, [room?.id]);
 
   if (!room) return null;
 
@@ -144,6 +155,82 @@ export default function MorePage() {
         )}
       </div>
 
+      {/* Date Invites Card */}
+      <div className="bg-white rounded-3xl p-5 shadow-[0_10px_25px_-5px_rgba(68,64,60,0.06),0_8px_10px_-6px_rgba(225,29,72,0.04)] border border-rose-100/50 space-y-3">
+        <div className="flex items-center justify-between pb-1 border-b border-[#faf2ee]">
+          <span className="text-sm font-bold text-[#1e1b19] flex items-center gap-1.5">
+            <Mail className="w-4 h-4 text-[#e11d48]" />
+            Undangan Ngedate
+          </span>
+          <button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#ffdada] text-[#b80035] hover:bg-[#ffb3b6] active:scale-95 transition-all cursor-pointer"
+          >
+            + Ajak Ngedate
+          </button>
+        </div>
+
+        {invites.length === 0 ? (
+          <div className="text-center py-4 text-[#5c3f40] text-xs">
+            <p className="font-semibold">Belum ada undangan kencan</p>
+            <p className="text-[10px] text-stone-400 mt-0.5">
+              Klik &quot;+ Ajak Ngedate&quot; untuk mengirim amplop surat ke pasanganmu!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {invites.slice(0, 5).map((inv) => (
+              <div
+                key={inv.id}
+                className="p-3 rounded-2xl bg-[#fff8f5] border border-rose-100/70 space-y-1.5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-[#1e1b19] truncate">
+                    &ldquo;{inv.title}&rdquo;
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                      inv.status === "accepted"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : inv.status === "declined"
+                        ? "bg-stone-200 text-stone-600"
+                        : "bg-amber-100 text-amber-700 animate-pulse"
+                    }`}
+                  >
+                    {inv.status === "accepted"
+                      ? "Diterima 💕"
+                      : inv.status === "declined"
+                      ? "Ditolak"
+                      : "Menunggu..."}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] text-[#5c3f40] flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-[#b80035]" />
+                    {inv.date}
+                  </span>
+                  {inv.time && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-[#855300]" />
+                      {inv.time}
+                    </span>
+                  )}
+                  {inv.location && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-[#006847]" />
+                      {inv.location}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-stone-400">
+                  Dari: {inv.senderName} {inv.senderId === currentUser?.id ? "(Kamu)" : ""}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Info Card */}
       <div className="bg-white rounded-3xl p-4 shadow-[0_10px_25px_-5px_rgba(68,64,60,0.06),0_8px_10px_-6px_rgba(225,29,72,0.04)] border border-rose-100/50 space-y-2.5 text-xs">
         <div className="flex items-center justify-between py-1 text-[#5c3f40]">
@@ -176,6 +263,11 @@ export default function MorePage() {
           Data kalian tetap tersimpan di cloud. Kamu bisa masuk kembali kapan saja dengan kode room.
         </p>
       </div>
+      {/* Date Invite Modal */}
+      <CreateInviteModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+      />
     </div>
   );
 }
