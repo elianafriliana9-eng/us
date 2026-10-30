@@ -29,6 +29,9 @@ import { EditDateModal } from "@/components/story/edit-date-modal";
 import { VoiceNoteModal } from "@/components/story/voice-note-modal";
 import { AudioPlayer } from "@/components/story/audio-player";
 import { CreateInviteModal } from "@/components/date-invite/create-invite-modal";
+import { FoodPickerCard } from "@/components/story/food-picker-card";
+import { subscribeToWishlist } from "@/lib/services/wishlistService";
+import { WishlistItem } from "@/types/wishlist";
 
 export default function StoryPage() {
   const { room, currentUser, presenceMap } = useRoomStore();
@@ -40,6 +43,7 @@ export default function StoryPage() {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [moods, setMoods] = useState<MoodEntry[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [filter, setFilter] = useState<"all" | PostCategory>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
@@ -66,6 +70,17 @@ export default function StoryPage() {
 
     const unsubscribe = subscribeToMoods(room.id, (loadedMoods) => {
       setMoods(loadedMoods);
+    });
+
+    return () => unsubscribe();
+  }, [room?.id]);
+
+  // Subscribe to wishlist for food picker options
+  useEffect(() => {
+    if (!room?.id) return;
+
+    const unsubscribe = subscribeToWishlist(room.id, (items) => {
+      setWishlistItems(items);
     });
 
     return () => unsubscribe();
@@ -273,6 +288,9 @@ export default function StoryPage() {
 
       {/* Daily Mood Check-in Ritual */}
       <MoodCard moods={moods} />
+
+      {/* Food Picker (Makan Mana Hari Ini?) */}
+      <FoodPickerCard wishlistItems={wishlistItems} />
 
       {/* Memory Filter Chips Bar */}
       <div className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar -mx-4 px-4">
