@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useRoomStore } from "@/stores/roomStore";
 import { Loader2, HeartHandshake } from "lucide-react";
 import Link from "next/link";
+import { PinLockGuard } from "@/components/auth/pin-lock-guard";
 
 // Dynamic import with ssr: false to prevent Next.js server crash on Leaflet window object
 const MemoryMapView = dynamic(
@@ -46,9 +47,11 @@ export default function MemoryMapPage() {
   }
 
   return (
-    <div className="w-full flex flex-col space-y-3">
-      {/* Interactive OpenStreetMap Container */}
-      <MemoryMapView />
-    </div>
+    <PinLockGuard featureTitle="Peta Kenangan">
+      <div className="w-full flex flex-col space-y-3">
+        {/* Interactive OpenStreetMap Container */}
+        <MemoryMapView />
+      </div>
+    </PinLockGuard>
   );
 }

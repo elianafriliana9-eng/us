@@ -30,6 +30,7 @@ import { VoiceNoteModal } from "@/components/story/voice-note-modal";
 import { AudioPlayer } from "@/components/story/audio-player";
 import { CreateInviteModal } from "@/components/date-invite/create-invite-modal";
 import { FoodPickerCard } from "@/components/story/food-picker-card";
+import { QuickMenu } from "@/components/story/quick-menu";
 import { subscribeToWishlist } from "@/lib/services/wishlistService";
 import { WishlistItem } from "@/types/wishlist";
 
@@ -285,6 +286,13 @@ export default function StoryPage() {
           <div ref={spawnAreaRef} className="relative w-full h-0 pointer-events-none overflow-visible" />
         </div>
       </div>
+
+      {/* Quick Menu Bar */}
+      <QuickMenu
+        onOpenInvite={() => setIsInviteModalOpen(true)}
+        onOpenVoice={() => setIsVoiceModalOpen(true)}
+        onOpenStory={() => setIsModalOpen(true)}
+      />
 
       {/* Daily Mood Check-in Ritual */}
       <MoodCard moods={moods} />

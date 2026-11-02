@@ -15,6 +15,7 @@ export interface Room {
   members: RoomMember[];
   connectedAt?: number;
   relationshipStartDate?: string;
+  privacyPinHash?: string;
 }
 
 export interface CurrentUser {

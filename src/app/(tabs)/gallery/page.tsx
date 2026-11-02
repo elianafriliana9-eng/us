@@ -10,6 +10,7 @@ import {
 import { GalleryPhoto } from "@/types/gallery";
 import { GalleryUploadModal } from "@/components/gallery/gallery-upload-modal";
 import { GalleryLightbox } from "@/components/gallery/gallery-lightbox";
+import { PinLockGuard } from "@/components/auth/pin-lock-guard";
 import { formatPhotoDate, getFirstName } from "@/components/gallery/gallery-utils";
 import { cn } from "@/lib/utils";
 import {
@@ -240,7 +241,7 @@ export default function GalleryPage() {
   const heroDate = heroPhoto ? formatPhotoDate(heroPhoto) : null;
 
   return (
-    <>
+    <PinLockGuard featureTitle="Galeri Foto">
       <div className="flex w-full flex-col space-y-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         {/* Title */}
         <div className="pt-1">
@@ -421,6 +422,6 @@ export default function GalleryPage() {
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
       />
-    </>
+    </PinLockGuard>
   );
 }

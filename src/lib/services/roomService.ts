@@ -9,6 +9,7 @@ import {
   query,
   where,
   limit,
+  removeUndefinedFields,
 } from "@/lib/firebase/firestore";
 import { onSnapshot, Unsubscribe } from "firebase/firestore";
 import { Room, RoomMember, CurrentUser } from "@/types/room";
@@ -249,4 +250,24 @@ export async function updateRelationshipStartDate(
   await updateDoc(roomRef, {
     relationshipStartDate: startDate,
   });
+}
+
+export async function setRoomPrivacyPin(
+  roomId: string,
+  pinHash: string,
+  fallbackRoomData?: Room
+): Promise<void> {
+  const roomRef = doc(db, "rooms", roomId);
+  if (fallbackRoomData) {
+    await setDoc(
+      roomRef,
+      removeUndefinedFields({
+        ...fallbackRoomData,
+        privacyPinHash: pinHash,
+      }),
+      { merge: true }
+    );
+  } else {
+    await setDoc(roomRef, { privacyPinHash: pinHash }, { merge: true });
+  }
 }

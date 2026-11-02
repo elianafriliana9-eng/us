@@ -1,11 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /rooms/{roomId} {
-      allow read, write: if true;
-      
+    match /{roomCol}/{roomId} {
+      allow read, write: if roomCol.matches('^(dev_)?rooms$');
+
       match /{allChildren=**} {
-        allow read, write: if true;
+        allow read, write: if roomCol.matches('^(dev_)?rooms$');
       }
     }
   }

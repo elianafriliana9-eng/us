@@ -1,7 +1,7 @@
 import { db } from "./config";
 import {
-  collection,
-  doc,
+  collection as firestoreCollection,
+  doc as firestoreDoc,
   getDoc,
   getDocs,
   setDoc,
@@ -18,6 +18,27 @@ import {
   CollectionReference,
   DocumentReference,
 } from "firebase/firestore";
+
+const PREFIX = process.env.NEXT_PUBLIC_DB_PREFIX || "";
+
+function prefixPath(path: string): string {
+  return path === "rooms" ? `${PREFIX}rooms` : path;
+}
+
+// Wrapper to transparently prefix root 'rooms' collection
+export const collection = ((...args: any[]) => {
+  if (args.length >= 2 && typeof args[1] === "string") {
+    args[1] = prefixPath(args[1]);
+  }
+  return (firestoreCollection as any)(...args);
+}) as typeof firestoreCollection;
+
+export const doc = ((...args: any[]) => {
+  if (args.length >= 2 && typeof args[1] === "string") {
+    args[1] = prefixPath(args[1]);
+  }
+  return (firestoreDoc as any)(...args);
+}) as typeof firestoreDoc;
 
 // Helper to get room document ref
 export const getRoomDocRef = (roomId: string): DocumentReference => {
