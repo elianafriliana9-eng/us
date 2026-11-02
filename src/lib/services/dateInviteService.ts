@@ -4,6 +4,7 @@ import {
   doc,
   setDoc,
   updateDoc,
+  getDoc,
   query,
   orderBy,
   onSnapshot,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/firebase/firestore";
 import { DateInvite, CreateDateInviteInput, DateInviteStatus } from "@/types/dateInvite";
 import { CurrentUser } from "@/types/room";
+import { createScheduleEvent } from "@/lib/services/scheduleService";
 
 export async function createDateInvite(
   roomId: string,
@@ -65,4 +67,32 @@ export async function respondToDateInvite(
       responseNote: responseNote?.trim() || undefined,
     })
   );
+
+  // If approved/accepted, automatically integrate into the room's calendar schedule!
+  if (status === "accepted") {
+    try {
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const inviteData = snap.data() as DateInvite;
+        await createScheduleEvent(
+          roomId,
+          {
+            id: inviteData.senderId,
+            name: inviteData.senderName,
+            role: "partner",
+          },
+          {
+            title: `Date: ${inviteData.title}`,
+            description: inviteData.description || `Undangan kencan dari ${inviteData.senderName} yang telah disetujui 💕`,
+            date: inviteData.date,
+            time: inviteData.time,
+            location: inviteData.location,
+            category: "date",
+          }
+        );
+      }
+    } catch (err) {
+      console.error("Gagal auto-sync date invite ke schedule:", err);
+    }
+  }
 }
