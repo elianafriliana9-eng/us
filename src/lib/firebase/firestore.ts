@@ -80,8 +80,6 @@ export function removeUndefinedFields<T extends object>(obj: T): T {
 
 export {
   db,
-  collection,
-  doc,
   getDoc,
   getDocs,
   setDoc,
