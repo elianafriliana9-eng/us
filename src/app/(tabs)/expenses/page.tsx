@@ -28,6 +28,7 @@ import {
   TrendingUp,
   CreditCard,
   HandCoins,
+  ScanLine,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -178,7 +179,7 @@ export default function ExpensesPage() {
   return (
     <div className="flex flex-col w-full space-y-4">
       {/* Top Header & New Button */}
-      <div className="flex items-center justify-between pt-1">
+      <div className="flex items-center justify-between pt-1 gap-2">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[#1e1b19] flex items-center gap-2">
             Our Expenses <Wallet className="h-5 w-5 text-[#b80035]" />
@@ -187,13 +188,22 @@ export default function ExpensesPage() {
             Catatan patungan & pengeluaran kencan berdua
           </p>
         </div>
-        <button
-          onClick={() => setIsAddOpen(true)}
-          className="px-3.5 py-2 rounded-full bg-[#1e1b19] text-[#fff8f5] text-xs font-bold shadow-xs active:scale-95 transition-transform flex items-center gap-1.5 cursor-pointer"
-        >
-          <Plus className="w-4 h-4 text-[#e11d48]" />
-          <span>+ Catat</span>
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="px-3 py-2 rounded-full bg-[#ffdada] text-[#b80035] border border-[#e5bdbe]/60 text-xs font-bold shadow-2xs active:scale-95 transition-transform flex items-center gap-1.5 cursor-pointer"
+          >
+            <ScanLine className="w-3.5 h-3.5" />
+            <span>Scan Struk</span>
+          </button>
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="px-3.5 py-2 rounded-full bg-[#1e1b19] text-[#fff8f5] text-xs font-bold shadow-xs active:scale-95 transition-transform flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-[#e11d48]" />
+            <span>+ Catat</span>
+          </button>
+        </div>
       </div>
 
       {/* Hero Card 1: Patungan / Debt Settlement Overview */}
