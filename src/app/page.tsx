@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRoomStore } from "@/stores/roomStore";
 import { createRoom, joinRoomByCode, getRoomByCode } from "@/lib/services/roomService";
 import { Room, RoomMember } from "@/types/room";
-import { ShieldCheck, UserCheck, Sparkles } from "lucide-react";
+import { ShieldCheck, UserCheck, Sparkles, Users, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 function RoomOnboardingContent() {
@@ -302,6 +303,29 @@ function RoomOnboardingContent() {
               </form>
             </div>
           )}
+        </div>
+
+        {/* Isolated Bestie Version Access Button */}
+        <div className="mt-5 w-full max-w-xs">
+          <Link
+            href="/bestie"
+            className="w-full px-4 py-3 rounded-2xl bg-white border border-[#e5bdbe] hover:border-[#141619] text-[#1e1b19] flex items-center justify-between transition-all active:scale-98 shadow-2xs"
+          >
+            <div className="flex items-center gap-2.5 text-left">
+              <div className="w-8 h-8 rounded-xl bg-[#2554E8] text-white flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-[#1e1b19] block leading-tight">
+                  Bestie Version
+                </span>
+                <span className="text-[10px] text-[#5c3f40] block">
+                  Ruang sahabat (Maks. 6 anggota per room)
+                </span>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-[#2554E8] shrink-0" />
+          </Link>
         </div>
       </div>
 

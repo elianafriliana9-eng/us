@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 @import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 
@@ -167,4 +167,75 @@ html, body {
 
 .heart-pin-tooltip::before {
   border-top-color: rgba(30, 27, 25, 0.92) !important;
+}
+
+/* =========================================================
+   ISOLATED BESTIE VERSION DESIGN SYSTEM (.theme-bestie)
+   Clean Editorial Bento — Zero impact on Couple Version
+   ========================================================= */
+.theme-bestie {
+  --surface: #F6F7F3;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: #EFF1EA;
+  --surface-container: #E6E9DF;
+  --surface-container-high: #DCE0D3;
+  --primary: #2554E8;
+  --primary-container: #DBE4FF;
+  --secondary: #1A2E05;
+  --secondary-container: #C8F547;
+  --tertiary: #FF6B35;
+  --on-surface: #141619;
+  --on-surface-variant: #525866;
+  --outline: #141619;
+  --outline-variant: #D8DDD0;
+  background-color: #F6F7F3;
+  color: #141619;
+}
+
+.font-display-bestie {
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.font-mono-bestie {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.bento-card {
+  background-color: #FFFFFF;
+  border: 1.5px solid #141619;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 0 #141619;
+}
+
+.bento-card-subtle {
+  background-color: #FFFFFF;
+  border: 1.5px solid #D8DDD0;
+  border-radius: 1.25rem;
+}
+
+.bento-btn-primary {
+  background-color: #2554E8;
+  color: #FFFFFF;
+  border: 1.5px solid #141619;
+  box-shadow: 0 3px 0 #141619;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.bento-btn-primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #141619;
+}
+
+.bento-btn-lime {
+  background-color: #C8F547;
+  color: #141619;
+  border: 1.5px solid #141619;
+  box-shadow: 0 3px 0 #141619;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.bento-btn-lime:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #141619;
 }
